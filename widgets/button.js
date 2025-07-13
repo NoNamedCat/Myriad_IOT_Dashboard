@@ -72,8 +72,13 @@ export default class ButtonWidget extends BaseWidget {
   }
 
   setOptions(o) { 
-      super.setOptions(o);
-      this.config = { ...this.config, ...o }; 
-      this.render();
+      super.setOptions(o); 
+      if (o.onText !== undefined) this.config.onText = o.onText;
+      if (o.offText !== undefined) this.config.offText = o.offText;
+      if (o.onMsg !== undefined) this.config.onMsg = o.onMsg;
+      if (o.offMsg !== undefined) this.config.offMsg = o.offMsg;
+      if (o.onColor !== undefined) this.config.onColor = o.onColor;
+      if (o.offColor !== undefined) this.config.offColor = o.offColor;
+      this.render(); 
   }
 }
