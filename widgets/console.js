@@ -93,7 +93,10 @@ export default class ConsoleWidget extends BaseWidget {
 
   setOptions(o) {
       super.setOptions(o);
-      this.publishTopic = o.publishTopic || this.topic;
+      // --- CORRECCIÓN ---
+      // Comprueba si 'publishTopic' existe en el objeto de opciones antes de asignarlo.
+      // Esto evita que una cadena vacía sea ignorada.
+      this.publishTopic = o.publishTopic !== undefined ? o.publishTopic : this.topic;
       this.config = { ...this.config, ...o };
       this.render();
   }
