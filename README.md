@@ -60,9 +60,9 @@ Use the top panel to configure your connection:
 
 #### 3. Saving and Sharing
 
--   **Guardar Local (Save Local):** Saves the current layout, widgets, and their configurations to your browser's `localStorage`.
--   **Cargar Local (Load Local):** Loads the last saved layout from your browser.
--   **Compartir URL (Share URL):** Generates a unique URL containing your entire dashboard state (layout, widgets, and connection settings). Copy this URL to save or share your exact setup.
+-   **Save Local:** Saves the current layout, widgets, and their configurations to your browser's `localStorage`.
+-   **Load Local:** Loads the last saved layout from your browser.
+-   **Share URL:** Generates a unique URL containing your entire dashboard state (layout, widgets, and connection settings). Copy this URL to save or share your exact setup.
 
 ## Technology Stack
 
