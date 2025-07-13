@@ -9,7 +9,7 @@ A dynamic and highly customizable web dashboard for visualizing your real-time M
 
 **[Try Myriad IOT Dashboard Now](https://nonamedcat.github.io/Myriad_IOT_Dashboard/)**
 
-![Myriad IOT Dashboard Screenshot](screenshots/Screenshot 2025-07-13 002637.png)
+![Myriad IOT Dashboard Screenshot](https://github.com/NoNamedCat/Myriad_IOT_Dashboard/blob/main/screenshots/Screenshot1.png?raw=true)
 
 
 ## Core Features
