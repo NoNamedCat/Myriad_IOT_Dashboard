@@ -9,9 +9,10 @@ A dynamic and highly customizable web dashboard for visualizing your real-time M
 
 **[Try Myriad IOT Dashboard Now](https://nonamedcat.github.io/Myriad_IOT_Dashboard/)**
 
-(https://github.com/NoNamedCat/Myriad_IOT_Dashboard/blob/main/screenshots/Screenshot1.png?raw=true)
-
-
+## Screenshots
+![Myriad IOT Dashboard Screenshot](https://github.com/NoNamedCat/Myriad_IOT_Dashboard/blob/main/screenshots/Screenshot1.png?raw=true)
+![Myriad IOT Dashboard Screenshot](https://github.com/NoNamedCat/Myriad_IOT_Dashboard/blob/main/screenshots/Screenshot2.png?raw=true)
+![Myriad IOT Dashboard Screenshot](https://github.com/NoNamedCat/Myriad_IOT_Dashboard/blob/main/screenshots/Screenshot3.png?raw=true)
 ## Core Features
 
 -   **Interactive Grid System:** Fully customizable layouts using a drag, drop, and resize grid powered by GridStack.js.
