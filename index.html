@@ -5,6 +5,7 @@
 <title>Myriad IOT Dashboard - Nested Grids</title>
 <link rel="stylesheet" href="libs/gridstack.min.css"/>
 <link rel="stylesheet" href="libs/leaflet.css"/>
+<link rel="icon" href="data:,">
 <style>
   :root, [data-theme="light"] {
     --bg-color: #f2f2f2;
@@ -153,10 +154,10 @@
             </select>
         </label>
         <label>Broker:<input id="broker" value="broker.hivemq.com"/></label>
-        <label>WS Port:<input id="port" type="number" value="8000"/></label>
+        <label>WS Port:<input id="port" type="number" value="8884"/></label>
         <label>User:<input id="username" autocomplete="username"/></label>
         <label>Password:<input id="password" type="password" autocomplete="current-password"></label>
-        <label><input id="useSSL" type="checkbox"> Use SSL</label>
+        <label><input id="useSSL" type="checkbox" checked> Use SSL</label>
         <label>Client ID:<input id="clientId" disabled/></label>
         <label><input id="randomClientId" type="checkbox" checked> Random</label>
         <button id="connectBtn" type="button">Connect</button>
@@ -308,7 +309,7 @@ function connect() {
       toggleConnectionBtns(true);
       const allTopics = new Set(widgets.flatMap(w => Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic]));
       allTopics.forEach(topic => {
-          if (topic && topic !== 'sin/topic/definido') client.subscribe(topic)
+          if (topic && topic !== 'no/topic/defined') client.subscribe(topic)
       });
     },
     onFailure: e => setStatus(`Error: ${e.errorMessage}`, 'red'),
@@ -388,7 +389,7 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
 
         if (client?.isConnected()) {
             const topics = Array.isArray(inst.topic) ? inst.topic : [inst.topic];
-            topics.forEach(t => { if (t && t !== 'sin/topic/definido') client.subscribe(t); });
+            topics.forEach(t => { if (t && t !== 'no/topic/defined') client.subscribe(t); });
         }
     } catch (error) {
         console.error("Error adding widget:", error);
