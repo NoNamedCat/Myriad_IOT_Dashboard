@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Myriad IOT Dashboard - Nested Grids</title>
+<link rel="stylesheet" href="libs/gridstack.min.css"/>
+<link rel="stylesheet" href="libs/leaflet.css"/>
+<style>
+  :root, [data-theme="light"] {
+    --bg-color: #f2f2f2;
+    --panel-bg-color: #ffffff;
+    --widget-bg-color: #ffffff;
+    --text-color: #212529;
+    --border-color: #ddd;
+    --primary-color: #007bff;
+    --primary-text-color: #ffffff;
+    --secondary-color: #e9ecef;
+    --danger-color: #dc3545;
+  }
+
+  [data-theme="dark"] {
+    --bg-color: #212529;
+    --panel-bg-color: #343a40;
+    --widget-bg-color: #495057;
+    --text-color: #f8f9fa;
+    --border-color: #6c757d;
+    --primary-color: #17a2b8;
+    --primary-text-color: #ffffff;
+    --secondary-color: #6c757d;
+    --danger-color: #c82333;
+  }
+
+  [data-theme="sepia"] {
+    --bg-color: #f4ecd8;
+    --panel-bg-color: #eaddc7;
+    --widget-bg-color: #fff8e7;
+    --text-color: #5b4636;
+    --border-color: #d3c5a8;
+    --primary-color: #8c6b4f;
+    --primary-text-color: #ffffff;
+    --secondary-color: #d3c5a8;
+    --danger-color: #a55449;
+  }
+  
+  [data-theme="ocean"] {
+    --bg-color: #e0f7fa;
+    --panel-bg-color: #b2ebf2;
+    --widget-bg-color: #ffffff;
+    --text-color: #004d40;
+    --border-color: #4dd0e1;
+    --primary-color: #0097a7;
+    --primary-text-color: #ffffff;
+    --secondary-color: #80deea;
+    --danger-color: #e57373;
+  }
+  
+  [data-theme="forest"] {
+    --bg-color: #2e3d32;
+    --panel-bg-color: #4a5d4d;
+    --widget-bg-color: #6f8a6f;
+    --text-color: #e8f5e9;
+    --border-color: #556b2f;
+    --primary-color: #8fbc8f;
+    --primary-text-color: #000000;
+    --secondary-color: #a9b7a9;
+    --danger-color: #cd5c5c;
+  }
+
+  [data-theme="matrix"] {
+    --bg-color: #000000;
+    --panel-bg-color: #0d0d0d;
+    --widget-bg-color: #0a0a0a;
+    --text-color: #00ff00;
+    --border-color: #003300;
+    --primary-color: #008f11;
+    --primary-text-color: #000000;
+    --secondary-color: #005000;
+    --danger-color: #ff0000;
+  }
+
+  [data-theme="coffee"] {
+    --bg-color: #ece0d1;
+    --panel-bg-color: #dbc1ac;
+    --widget-bg-color: #f5f5f5;
+    --text-color: #3e2723;
+    --border-color: #a1887f;
+    --primary-color: #6d4c41;
+    --primary-text-color: #ffffff;
+    --secondary-color: #bcaaa4;
+    --danger-color: #d32f2f;
+  }
+
+  [data-theme="midnight"] {
+    --bg-color: #19192a;
+    --panel-bg-color: #2c2c44;
+    --widget-bg-color: #3c3c5c;
+    --text-color: #e0e0ff;
+    --border-color: #50507a;
+    --primary-color: #7e57c2;
+    --primary-text-color: #ffffff;
+    --secondary-color: #5c6bc0;
+    --danger-color: #ef5350;
+  }
+
+  [data-theme="solar-vanilla"] {
+    --bg-color: #fdf6e3;
+    --panel-bg-color: #f5eccc;
+    --widget-bg-color: #ffffff;
+    --text-color: #657b83;
+    --border-color: #eee8d5;
+    --primary-color: #b58900;
+    --primary-text-color: #ffffff;
+    --secondary-color: #d33682;
+    --danger-color: #dc322f;
+  }
+
+  body{ margin:0; font-family:Arial,Helvetica,sans-serif; background: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+  #panel{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:8px; background: var(--panel-bg-color); border-bottom:1px solid var(--border-color); transition: background-color 0.3s, border-color 0.3s; }
+  #panel label, #panel button, #panel select, #panel input, #panel span { color: var(--text-color); }
+  #panel input, #panel select { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; }
+  #panel button { background-color: var(--primary-color); color: var(--primary-text-color); border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+  #panel button:disabled { background-color: var(--secondary-color); cursor: not-allowed; }
+  .grid-stack-item-content{ background: var(--widget-bg-color); border:1px solid var(--border-color); color: var(--text-color); border-radius:4px; overflow:hidden; display:flex; flex-direction:column; transition: background-color 0.3s, border-color 0.3s, color 0.3s; }
+  .widget-header{ background: var(--primary-color); color: var(--primary-text-color); padding:4px 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center; transition: background-color 0.3s; cursor: move; }
+  .widget-header-topic{flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px}
+  .widget-content{flex-grow:1;padding:8px;overflow:auto}
+  .config-btn,.del-btn{background:#6c757d;border:none;color:#fff;font-size:12px;padding:0 4px;cursor:pointer;border-radius:2px}
+  .del-btn{background:var(--danger-color)}
+  .modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5)}
+  .modal-content{ background: var(--widget-bg-color); border: 1px solid var(--border-color); margin:10% auto;padding:20px;width:320px;border-radius:4px }
+  .modal-content h3{margin-top:0}
+  .modal-content label{display:block;margin-bottom:6px;font-size:13px}
+  .modal-content input, .modal-content textarea{ width:calc(100% - 12px); margin-bottom:10px; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 5px; }
+  .modal-content button{ background-color: var(--primary-color); color: var(--primary-text-color); border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+  .grid-stack-item-content .grid-stack { background: rgba(0, 0, 0, 0.05); inset: 10px; margin-top: 40px; position: absolute; }
+</style>
+</head>
+<body data-theme="light">
+
+<div id="panel">
+    <form onsubmit="return false;" style="display: contents;">
+        <label>Theme:
+            <select id="themeSelector">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="sepia">Sepia</option>
+            <option value="ocean">Ocean</option>
+            <option value="forest">Forest</option>
+            <option value="matrix">Matrix</option>
+            <option value="coffee">Coffee</option>
+            <option value="midnight">Midnight</option>
+            <option value="solar-vanilla">Solar Vanilla</option>
+            </select>
+        </label>
+        <label>Broker:<input id="broker" value="broker.hivemq.com"/></label>
+        <label>WS Port:<input id="port" type="number" value="8000"/></label>
+        <label>User:<input id="username" autocomplete="username"/></label>
+        <label>Password:<input id="password" type="password" autocomplete="current-password"></label>
+        <label><input id="useSSL" type="checkbox"> Use SSL</label>
+        <label>Client ID:<input id="clientId" disabled/></label>
+        <label><input id="randomClientId" type="checkbox" checked> Random</label>
+        <button id="connectBtn" type="button">Connect</button>
+        <button id="disconnectBtn" type="button" disabled>Disconnect</button>
+        <span id="status">Disconnected</span>
+    </form>
+</div>
+<div id="panel">
+  <select id="widgetSelect"><option value="">-- Loading --</option></select>
+  <button id="addBtn" type="button" disabled>Add Widget</button>
+  <button id="saveBtn" type="button">Save Local</button>
+  <button id="loadBtn" type="button">Load Local</button>
+  <button id="clearBtn" type="button">Clear</button>
+  <button id="shareBtn" type="button" style="background-color: #28a745;">Share URL</button>
+</div>
+
+<div class="grid-stack main-grid"></div>
+
+<div id="configModal" class="modal">
+  <div class="modal-content">
+    <h3>Configuration</h3>
+    <div id="configForm"></div>
+    <button onclick="closeModal()" type="button">Cancel</button>
+    <button onclick="saveConfig()" type="button">Save</button>
+  </div>
+</div>
+
+<script src="libs/gridstack-all.js" defer></script>
+<script src="libs/chart.umd.min.js" defer></script>
+<script src="libs/paho-mqtt.min.js" defer></script>
+<script src="libs/leaflet.js" defer></script>
+
+<script type="module">
+let client = null;
+const widgets = [];
+const widgetMap = {};
+let grid = null;
+let manualDisconnect = false;
+
+function initializeApp() {
+    if (!window.GridStack) {
+        setTimeout(initializeApp, 50);
+        return;
+    }
+    
+    grid = window.GridStack.init({
+        float: true,
+        acceptWidgets: true,
+        column: 12, 
+        cellHeight: '2rem',
+        margin: 5,
+        draggable: {
+            handle: '.widget-header',
+        }
+    }, '.main-grid');
+
+    loadFromUrl().then(loaded => {
+        if (!loaded) {
+            loadLayout();
+        }
+        connect();
+    });
+
+    discoverWidgets();
+
+    const themeSelector = document.getElementById('themeSelector');
+    document.getElementById('addBtn').onclick = () => addWidget(document.getElementById('widgetSelect').value, grid); 
+    document.getElementById('connectBtn').onclick = connect;
+    document.getElementById('disconnectBtn').onclick = disconnect;
+    document.getElementById('saveBtn').onclick = saveLayout;
+    document.getElementById('loadBtn').onclick = loadLayout;
+    document.getElementById('clearBtn').onclick = clearDashboard;
+    document.getElementById('shareBtn').onclick = generateShareableUrl;
+    themeSelector.addEventListener('change', () => applyTheme(themeSelector.value));
+    
+    const randomClientIdCheckbox = document.getElementById('randomClientId');
+    const clientIdInput = document.getElementById('clientId');
+    randomClientIdCheckbox.addEventListener('change', () => {
+        clientIdInput.disabled = randomClientIdCheckbox.checked;
+    });
+
+    grid.on('change', saveLayout);
+    grid.on('resizestop', (event, el) => {
+        const widget = widgets.find(w => w.node === el);
+        if (widget && widget.inst.onResize) {
+            widget.inst.onResize();
+        }
+    });
+
+    const savedTheme = localStorage.getItem('dashboardTheme') || 'light';
+    themeSelector.value = savedTheme;
+    document.body.setAttribute('data-theme', savedTheme);
+}
+
+
+/******************************************************************
+ * 1) MQTT Connection
+ ******************************************************************/
+function setStatus(txt, color = 'black') {
+  document.getElementById('status').textContent = txt;
+  document.getElementById('status').style.color = color;
+}
+
+function connect() {
+  manualDisconnect = false; 
+
+  const broker = document.getElementById('broker').value.trim();
+  const port = Number(document.getElementById('port').value);
+  const useSSL = document.getElementById('useSSL').checked;
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  
+  let cid;
+  const randomClientIdCheckbox = document.getElementById('randomClientId');
+  if (randomClientIdCheckbox.checked) {
+    cid = 'dash_' + Math.random().toString(16).slice(2, 8);
+  } else {
+    cid = document.getElementById('clientId').value.trim();
+    if (!cid) {
+        alert("Manual Client ID cannot be empty. Using a random ID.");
+        cid = 'dash_' + Math.random().toString(16).slice(2, 8);
+    }
+  }
+
+  client = new Paho.Client(broker, port, cid);
+  
+  client.onConnectionLost = (responseObject) => {
+    setStatus('Disconnected', 'red');
+    toggleConnectionBtns(false);
+    if (responseObject.errorCode !== 0 && !manualDisconnect) {
+        setStatus('Reconnecting...', 'orange');
+        connect(); 
+    }
+  };
+
+  client.onMessageArrived = msg => {
+    widgets.forEach(w => {
+      const topics = Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic];
+      if (topics.includes(msg.destinationName)) {
+        w.inst.onMessage(msg.payloadBytes, msg.destinationName);
+      }
+    });
+  };
+
+  setStatus('Connecting...', 'orange');
+  const connOpts = {
+    onSuccess: () => {
+      setStatus('Connected', 'green');
+      toggleConnectionBtns(true);
+      const allTopics = new Set(widgets.flatMap(w => Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic]));
+      allTopics.forEach(topic => {
+          if (topic && topic !== 'sin/topic/definido') client.subscribe(topic)
+      });
+    },
+    onFailure: e => setStatus(`Error: ${e.errorMessage}`, 'red'),
+    useSSL: useSSL,
+  };
+  if (username) connOpts.userName = username;
+  if (password) connOpts.password = password;
+  client.connect(connOpts);
+}
+
+function disconnect() {
+    manualDisconnect = true; 
+    if (client?.isConnected()) {
+        client.disconnect();
+    }
+}
+function publish(topic, payload) { if (client?.isConnected()) client.send(topic, payload, 0, false); }
+function toggleConnectionBtns(isConnected) {
+  document.getElementById('connectBtn').disabled = isConnected;
+  document.getElementById('disconnectBtn').disabled = !isConnected;
+}
+
+/******************************************************************
+ * 2) Widget Management
+ ******************************************************************/
+async function discoverWidgets() {
+  try {
+    const res = await fetch('widgets.json');
+    const list = await res.json();
+    const sel = document.getElementById('widgetSelect');
+    sel.innerHTML = '';
+    list.forEach(name => {
+      sel.add(new Option(name, name));
+      widgetMap[name] = `./widgets/${name}.js`;
+    });
+    document.getElementById('addBtn').disabled = false;
+  } catch (err) {
+    alert('Could not read widgets.json.'); console.error(err);
+  }
+}
+
+async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
+    if (!grid) {
+        alert("Grid is not ready. Please try again in a moment.");
+        return;
+    }
+    if (!type || !widgetMap[type]) return alert(`Widget type "${type}" does not exist.`);
+
+    try {
+        const mod = await import(widgetMap[type]);
+        const Widget = mod.default;
+        const id = 'w' + Date.now();
+        const content = `
+            <div class="widget-header">
+                <span class="widget-header-topic"></span>
+                <div>
+                    <button class="config-btn" onclick="openConfig('${id}')">⚙️</button>
+                    <button class="del-btn">✖</button>
+                </div>
+            </div>
+            <div id="${id}" class="widget-content"></div>`;
+
+        const node = targetGrid.addWidget({ ...gridOpts, content });
+        
+        node.querySelector('.del-btn').addEventListener('click', () => {
+            removeWidget(id);
+        });
+
+        const container = node.querySelector(`#${id}`);
+        const inst = new Widget(id, container, publish, targetGrid); 
+        inst.setOptions?.(opts);
+        
+        const topicDisplay = Array.isArray(inst.topic) ? inst.topic.join(', ') : (inst.topic || 'No Topic');
+        node.querySelector('.widget-header-topic').textContent = inst.config?.title || topicDisplay;
+        
+        widgets.push({ id, inst, node, type, grid: targetGrid });
+
+        if (client?.isConnected()) {
+            const topics = Array.isArray(inst.topic) ? inst.topic : [inst.topic];
+            topics.forEach(t => { if (t && t !== 'sin/topic/definido') client.subscribe(t); });
+        }
+    } catch (error) {
+        console.error("Error adding widget:", error);
+        alert(`An error occurred while trying to add widget of type '${type}':\n\n${error.message}`);
+    }
+}
+
+function removeWidget(id) {
+  const idx = widgets.findIndex(w => w.id === id);
+  if (idx === -1) return;
+  const w = widgets[idx];
+  w.inst.destroy?.();
+  w.grid.removeWidget(w.node, true);
+  widgets.splice(idx, 1);
+  saveLayout();
+}
+
+/******************************************************************
+ * 3) Configuration and Persistence
+ ******************************************************************/
+let currentConfigWidget = null;
+
+function openConfig(id) {
+  const w = widgets.find(w => w.id === id);
+  if (!w) return;
+  currentConfigWidget = w.inst;
+  document.getElementById('configForm').innerHTML = w.inst.getConfigForm() || 'No configuration options.';
+  w.inst.onConfigFormRendered?.();
+  document.getElementById('configModal').style.display = 'block';
+}
+
+function closeModal() {
+  document.getElementById('configModal').style.display = 'none';
+}
+
+function saveConfig() {
+  if (!currentConfigWidget) return;
+  const inst = currentConfigWidget;
+  inst.saveConfig();
+  
+  if (client?.isConnected()) {
+    const newTopics = new Set(Array.isArray(inst.topic) ? inst.topic : [inst.topic]);
+    const oldTopics = new Set(Array.isArray(inst.oldTopic) ? inst.oldTopic : [inst.oldTopic]);
+    oldTopics.forEach(oldTopic => {
+      if (oldTopic && !newTopics.has(oldTopic) && !widgets.some(w => w.inst.id !== inst.id && (Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic]).includes(oldTopic))) {
+        client.unsubscribe(oldTopic);
+      }
+    });
+    newTopics.forEach(newTopic => {
+      if (newTopic && !oldTopics.has(newTopic)) client.subscribe(newTopic);
+    });
+  }
+  
+  const node = widgets.find(w => w.inst.id === inst.id)?.node;
+  if (node) {
+    const topicDisplay = Array.isArray(inst.topic) ? inst.topic.join(', ') : (inst.topic || 'No Topic');
+    node.querySelector('.widget-header-topic').textContent = inst.config?.title || topicDisplay;
+  }
+  closeModal();
+  saveLayout();
+}
+
+function serializeGrid(targetGrid) {
+    if (!targetGrid) return [];
+    return targetGrid.save(false).map(n => {
+        const widget = widgets.find(w => w.node === n.el);
+        if (!widget) return null;
+        let children = widget.inst.nestedGrid ? serializeGrid(widget.inst.nestedGrid) : [];
+        return { x: n.x, y: n.y, w: n.w, h: n.h, type: widget.type, options: widget.inst.getOptions?.() || {}, children };
+    }).filter(item => item !== null);
+}
+
+function saveLayout() {
+  const layoutData = serializeGrid(grid);
+  localStorage.setItem('dashboardLayout', JSON.stringify(layoutData, null, 2));
+}
+
+async function loadGrid(targetGrid, items) {
+    if (!items) return;
+    for (const item of items) {
+        const gridOpts = { x: item.x, y: item.y, w: item.w, h: item.h };
+        await addWidget(item.type, targetGrid, item.options, gridOpts);
+        if (item.children && item.children.length > 0) {
+            const parentWidget = widgets[widgets.length - 1];
+            if (parentWidget && parentWidget.inst.nestedGrid) {
+                parentWidget.inst.nestedGrid.removeAll(false);
+                await loadGrid(parentWidget.inst.nestedGrid, item.children);
+            }
+        }
+    }
+}
+
+async function loadLayout() {
+  const saved = localStorage.getItem('dashboardLayout');
+  if (!saved) return;
+  if (!grid) return;
+  grid.removeAll(false);
+  widgets.length = 0;
+  const data = JSON.parse(saved);
+  await loadGrid(grid, data);
+}
+
+function clearDashboard() {
+  if (confirm('Clear the entire dashboard and delete the saved layout?')) {
+    localStorage.removeItem('dashboardLayout');
+    grid.removeAll(true);
+    widgets.length = 0;
+  }
+}
+
+/******************************************************************
+ * 4) Theme and URL Management
+ ******************************************************************/
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('dashboardTheme', theme);
+  widgets.forEach(w => w.inst.onThemeChanged?.());
+}
+
+async function generateShareableUrl() {
+    const connectionInfo = {
+        broker: document.getElementById('broker').value,
+        port: document.getElementById('port').value,
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        useSSL: document.getElementById('useSSL').checked,
+        clientId: document.getElementById('clientId').value,
+        randomClientId: document.getElementById('randomClientId').checked
+    };
+    
+    const fullState = {
+        layout: serializeGrid(grid),
+        connection: connectionInfo,
+        theme: document.getElementById('themeSelector').value
+    };
+
+    const jsonString = JSON.stringify(fullState);
+    const encodedData = encodeURIComponent(jsonString);
+
+    const url = new URL(window.location);
+    url.hash = `data=${encodedData}`;
+    
+    try {
+        await navigator.clipboard.writeText(url.toString());
+        alert("Dashboard URL copied to clipboard.");
+    } catch(e) {
+        alert("Could not copy URL. Please copy it manually from the address bar.");
+        window.location.hash = url.hash;
+    }
+}
+
+async function loadFromUrl() {
+    if (!window.location.hash.startsWith('#data=')) {
+        return false;
+    }
+    
+    try {
+        const encodedData = window.location.hash.substring(6);
+        const jsonString = decodeURIComponent(encodedData);
+        const fullState = JSON.parse(jsonString);
+
+        const { connection, layout, theme } = fullState;
+        document.getElementById('broker').value = connection.broker;
+        document.getElementById('port').value = connection.port;
+        document.getElementById('username').value = connection.username;
+        document.getElementById('password').value = connection.password;
+        document.getElementById('useSSL').checked = connection.useSSL;
+        document.getElementById('clientId').value = connection.clientId;
+        document.getElementById('randomClientId').checked = connection.randomClientId;
+        document.getElementById('clientId').disabled = connection.randomClientId;
+
+        applyTheme(theme);
+        document.getElementById('themeSelector').value = theme;
+        
+        if (grid) {
+            grid.removeAll(false);
+            widgets.length = 0;
+            await loadGrid(grid, layout);
+        }
+        return true;
+    } catch (e) {
+        console.error("Error loading from URL:", e);
+        alert("Could not load configuration from URL. It may be corrupt.");
+        return false;
+    }
+}
+
+/******************************************************************
+ * 5) Event Handlers and Startup
+ ******************************************************************/
+window.openConfig = openConfig;
+window.closeModal = closeModal;
+window.saveConfig = saveConfig;
+
+document.addEventListener('DOMContentLoaded', initializeApp);
+
+</script>
+</body>
+</html>
