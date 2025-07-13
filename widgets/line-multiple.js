@@ -1,8 +1,8 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
 
+// --- FUNCIONES AUXILIARES DE COLOR ---
 const randomColor = () => `hsl(${Math.random() * 360}, 70%, 60%)`;
-
 const resolveColor = (colorVar) => {
     if (colorVar.startsWith('var(')) {
         return getComputedStyle(document.documentElement).getPropertyValue(colorVar.slice(4, -1)).trim();
@@ -10,6 +10,7 @@ const resolveColor = (colorVar) => {
     return colorVar;
 };
 
+// --- WIDGET PRINCIPAL ---
 export default class LineWidget extends BaseWidget {
     constructor(id, container, publishFn, parentGrid) {
         super(id, container, publishFn, parentGrid);
@@ -28,7 +29,6 @@ export default class LineWidget extends BaseWidget {
             maxDataPoints: 50,
         };
         
-        // El widget ahora puede suscribirse a múltiples topics.
         this.topic = [this.config.series[0].topic];
 
         this.container.style.height = '100%';
@@ -97,7 +97,7 @@ export default class LineWidget extends BaseWidget {
                 const ts = new Date().toLocaleTimeString();
                 
                 this.chart.data.datasets[index].data.push(parseFloat(val) || 0);
-                this.chart.data.labels.push(ts); // La etiqueta de tiempo es compartida.
+                this.chart.data.labels.push(ts);
 
                 if (this.chart.data.labels.length > this.config.maxDataPoints) {
                     this.chart.data.labels.shift();
@@ -144,7 +144,7 @@ export default class LineWidget extends BaseWidget {
         let seriesHtml = this.config.series.map((s, i) => this._createSeriesConfigRow(s, i)).join('');
         
         return `
-            <div id="series-config-container">
+            <div id="series-config-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px; padding: 5px; border: 1px dashed var(--border-color);">
                 ${seriesHtml}
             </div>
             <button type="button" id="add-series-btn">Add New Series</button>
@@ -190,12 +190,13 @@ export default class LineWidget extends BaseWidget {
         });
         
         this.topic = [...new Set(this.config.series.map(s => s.topic).filter(t => t))];
+        
         this.createChart();
     }
   
     getOptions() { 
         return { 
-            topic: this.topic, 
+            topic: this.topic,
             jsonPath: this.jsonPath, 
             ...this.config 
         }; 

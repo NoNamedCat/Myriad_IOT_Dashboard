@@ -120,8 +120,33 @@
   .config-btn,.del-btn{background:#6c757d;border:none;color:#fff;font-size:12px;padding:0 4px;cursor:pointer;border-radius:2px}
   .del-btn{background:var(--danger-color)}
   .modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5)}
-  .modal-content{ background: var(--widget-bg-color); border: 1px solid var(--border-color); margin:10% auto;padding:20px;width:320px;border-radius:4px }
+  /* --- CORRECCIÓN --- Se han modificado los estilos del modal para un mejor centrado y para añadir scroll. */
+  .modal-content{ 
+    background: var(--widget-bg-color); 
+    border: 1px solid var(--border-color); 
+    padding:20px;
+    width:350px;
+    border-radius:5px;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-height: 85vh; /* Altura máxima para evitar que se salga de la pantalla */
+    display: flex;
+    flex-direction: column;
+  }
   .modal-content h3{margin-top:0}
+  .modal-content #configForm {
+      overflow-y: auto; /* El scroll ahora se aplica aquí, al formulario */
+      flex-grow: 1;
+      padding-right: 10px; /* Espacio para la barra de scroll */
+  }
+  .modal-content .modal-footer {
+      flex-shrink: 0;
+      padding-top: 15px;
+      border-top: 1px solid var(--border-color);
+      margin-top: 10px;
+  }
   .modal-content label{display:block;margin-bottom:6px;font-size:13px}
   .modal-content input, .modal-content textarea{ width:calc(100% - 12px); margin-bottom:10px; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 5px; }
   .modal-content button{ background-color: var(--primary-color); color: var(--primary-text-color); border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
@@ -172,8 +197,10 @@
   <div class="modal-content">
     <h3>Configuration</h3>
     <div id="configForm"></div>
-    <button onclick="closeModal()">Cancel</button>
-    <button onclick="saveConfig()">Save</button>
+    <div class="modal-footer">
+      <button onclick="closeModal()">Cancel</button>
+      <button onclick="saveConfig()">Save</button>
+    </div>
   </div>
 </div>
 
