@@ -5,7 +5,12 @@
 
 A dynamic and highly customizable web dashboard for visualizing your real-time MQTT data streams. Built with vanilla JavaScript, Myriad allows you to build the interface you need to monitor your IoT ecosystem with no server-side configuration required.
 
+## Live Demo
+
+**[Try Myriad IOT Dashboard Now](https://nonamedcat.github.io/Myriad_IOT_Dashboard/)**
+
 ![Myriad IOT Dashboard Screenshot](https://i.imgur.com/your-screenshot-url.png)
+
 
 ## Core Features
 
