@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Myriad IOT Dashboard - Nested Grids</title>
+<title>Myriad IOT Dashboard</title>
 <link rel="stylesheet" href="libs/gridstack.min.css"/>
 <link rel="stylesheet" href="libs/leaflet.css"/>
 <link rel="icon" href="data:,">
@@ -15,8 +15,6 @@
     --border-color: #ddd;
     --primary-color: #007bff;
     --primary-text-color: #ffffff;
-    --secondary-color: #e9ecef;
-    --danger-color: #dc3545;
   }
 
   [data-theme="dark"] {
@@ -27,8 +25,6 @@
     --border-color: #6c757d;
     --primary-color: #17a2b8;
     --primary-text-color: #ffffff;
-    --secondary-color: #6c757d;
-    --danger-color: #c82333;
   }
 
   [data-theme="sepia"] {
@@ -39,8 +35,6 @@
     --border-color: #d3c5a8;
     --primary-color: #8c6b4f;
     --primary-text-color: #ffffff;
-    --secondary-color: #d3c5a8;
-    --danger-color: #a55449;
   }
   
   [data-theme="ocean"] {
@@ -51,8 +45,6 @@
     --border-color: #4dd0e1;
     --primary-color: #0097a7;
     --primary-text-color: #ffffff;
-    --secondary-color: #80deea;
-    --danger-color: #e57373;
   }
   
   [data-theme="forest"] {
@@ -63,8 +55,6 @@
     --border-color: #556b2f;
     --primary-color: #8fbc8f;
     --primary-text-color: #000000;
-    --secondary-color: #a9b7a9;
-    --danger-color: #cd5c5c;
   }
 
   [data-theme="matrix"] {
@@ -75,8 +65,6 @@
     --border-color: #003300;
     --primary-color: #008f11;
     --primary-text-color: #000000;
-    --secondary-color: #005000;
-    --danger-color: #ff0000;
   }
 
   [data-theme="coffee"] {
@@ -87,8 +75,6 @@
     --border-color: #a1887f;
     --primary-color: #6d4c41;
     --primary-text-color: #ffffff;
-    --secondary-color: #bcaaa4;
-    --danger-color: #d32f2f;
   }
 
   [data-theme="midnight"] {
@@ -99,8 +85,6 @@
     --border-color: #50507a;
     --primary-color: #7e57c2;
     --primary-text-color: #ffffff;
-    --secondary-color: #5c6bc0;
-    --danger-color: #ef5350;
   }
 
   [data-theme="solar-vanilla"] {
@@ -111,10 +95,18 @@
     --border-color: #eee8d5;
     --primary-color: #b58900;
     --primary-text-color: #ffffff;
-    --secondary-color: #d33682;
-    --danger-color: #dc322f;
   }
 
+  :root, [data-theme="light"] { --secondary-color: #e9ecef; --danger-color: #dc3545; }
+  [data-theme="dark"] { --secondary-color: #6c757d; --danger-color: #c82333; }
+  [data-theme="sepia"] { --secondary-color: #d3c5a8; --danger-color: #a55449; }
+  [data-theme="ocean"] { --secondary-color: #80deea; --danger-color: #e57373; }
+  [data-theme="forest"] { --secondary-color: #a9b7a9; --danger-color: #cd5c5c; }
+  [data-theme="matrix"] { --secondary-color: #005000; --danger-color: #ff0000; }
+  [data-theme="coffee"] { --secondary-color: #bcaaa4; --danger-color: #d32f2f; }
+  [data-theme="midnight"] { --secondary-color: #5c6bc0; --danger-color: #ef5350; }
+  [data-theme="solar-vanilla"] { --secondary-color: #d33682; --danger-color: #dc322f; }
+  
   body{ margin:0; font-family:Arial,Helvetica,sans-serif; background: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
   #panel{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:8px; background: var(--panel-bg-color); border-bottom:1px solid var(--border-color); transition: background-color 0.3s, border-color 0.3s; }
   #panel label, #panel button, #panel select, #panel input, #panel span { color: var(--text-color); }
@@ -180,8 +172,8 @@
   <div class="modal-content">
     <h3>Configuration</h3>
     <div id="configForm"></div>
-    <button onclick="closeModal()" type="button">Cancel</button>
-    <button onclick="saveConfig()" type="button">Save</button>
+    <button onclick="closeModal()">Cancel</button>
+    <button onclick="saveConfig()">Save</button>
   </div>
 </div>
 
@@ -192,12 +184,12 @@
 
 <script type="module">
 let client = null;
-const widgets = [];
 const widgetMap = {};
 let grid = null;
 let manualDisconnect = false;
 
-function initializeApp() {
+// --- FUNCIÓN DE INICIO MODIFICADA ---
+async function initializeApp() {
     if (!window.GridStack) {
         setTimeout(initializeApp, 50);
         return;
@@ -214,15 +206,19 @@ function initializeApp() {
         }
     }, '.main-grid');
 
-    loadFromUrl().then(loaded => {
-        if (!loaded) {
-            loadLayout();
-        }
-        connect();
-    });
+    // 1. Descubrir widgets PRIMERO y esperar a que termine
+    await discoverWidgets();
 
-    discoverWidgets();
+    // 2. Ahora, cargar desde URL o localStorage
+    const loadedFromUrl = await loadFromUrl();
+    if (!loadedFromUrl) {
+        loadLayout();
+    }
 
+    // 3. Conectar al broker
+    connect();
+
+    // Asignación de eventos
     const themeSelector = document.getElementById('themeSelector');
     document.getElementById('addBtn').onclick = () => addWidget(document.getElementById('widgetSelect').value, grid); 
     document.getElementById('connectBtn').onclick = connect;
@@ -241,9 +237,8 @@ function initializeApp() {
 
     grid.on('change', saveLayout);
     grid.on('resizestop', (event, el) => {
-        const widget = widgets.find(w => w.node === el);
-        if (widget && widget.inst.onResize) {
-            widget.inst.onResize();
+        if (el.widgetInstance && el.widgetInstance.onResize) {
+            el.widgetInstance.onResize();
         }
     });
 
@@ -252,10 +247,6 @@ function initializeApp() {
     document.body.setAttribute('data-theme', savedTheme);
 }
 
-
-/******************************************************************
- * 1) MQTT Connection
- ******************************************************************/
 function setStatus(txt, color = 'black') {
   document.getElementById('status').textContent = txt;
   document.getElementById('status').style.color = color;
@@ -289,16 +280,18 @@ function connect() {
     toggleConnectionBtns(false);
     if (responseObject.errorCode !== 0 && !manualDisconnect) {
         setStatus('Reconnecting...', 'orange');
-        connect(); 
+        setTimeout(() => connect(), 2000); // Reintentar después de 2 segundos
     }
   };
 
   client.onMessageArrived = msg => {
-    widgets.forEach(w => {
-      const topics = Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic];
-      if (topics.includes(msg.destinationName)) {
-        w.inst.onMessage(msg.payloadBytes, msg.destinationName);
-      }
+    grid.getGridItems().forEach(el => {
+        if (el && el.widgetInstance) {
+            const topics = Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic];
+            if (topics.includes(msg.destinationName)) {
+                el.widgetInstance.onMessage(msg.payloadBytes, msg.destinationName);
+            }
+        }
     });
   };
 
@@ -307,10 +300,14 @@ function connect() {
     onSuccess: () => {
       setStatus('Connected', 'green');
       toggleConnectionBtns(true);
-      const allTopics = new Set(widgets.flatMap(w => Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic]));
-      allTopics.forEach(topic => {
-          if (topic && topic !== 'no/topic/defined') client.subscribe(topic)
+      const allTopics = new Set();
+      grid.getGridItems().forEach(el => {
+        if (el && el.widgetInstance) {
+            const topics = Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic];
+            topics.forEach(t => { if (t && t !== 'no/topic/defined') allTopics.add(t); });
+        }
       });
+      allTopics.forEach(topic => client.subscribe(topic));
     },
     onFailure: e => setStatus(`Error: ${e.errorMessage}`, 'red'),
     useSSL: useSSL,
@@ -332,9 +329,6 @@ function toggleConnectionBtns(isConnected) {
   document.getElementById('disconnectBtn').disabled = !isConnected;
 }
 
-/******************************************************************
- * 2) Widget Management
- ******************************************************************/
 async function discoverWidgets() {
   try {
     const res = await fetch('widgets.json');
@@ -374,9 +368,7 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
 
         const node = targetGrid.addWidget({ ...gridOpts, content });
         
-        node.querySelector('.del-btn').addEventListener('click', () => {
-            removeWidget(id);
-        });
+        node.querySelector('.del-btn').addEventListener('click', () => removeWidget(node));
 
         const container = node.querySelector(`#${id}`);
         const inst = new Widget(id, container, publish, targetGrid); 
@@ -385,7 +377,8 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
         const topicDisplay = Array.isArray(inst.topic) ? inst.topic.join(', ') : (inst.topic || 'No Topic');
         node.querySelector('.widget-header-topic').textContent = inst.config?.title || topicDisplay;
         
-        widgets.push({ id, inst, node, type, grid: targetGrid });
+        node.widgetInstance = inst;
+        node.widgetType = type;
 
         if (client?.isConnected()) {
             const topics = Array.isArray(inst.topic) ? inst.topic : [inst.topic];
@@ -397,28 +390,24 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
     }
 }
 
-function removeWidget(id) {
-  const idx = widgets.findIndex(w => w.id === id);
-  if (idx === -1) return;
-  const w = widgets[idx];
-  w.inst.destroy?.();
-  w.grid.removeWidget(w.node, true);
-  widgets.splice(idx, 1);
-  saveLayout();
+function removeWidget(node) {
+    if (node && node.widgetInstance) {
+        node.widgetInstance.destroy?.();
+    }
+    grid.removeWidget(node, true);
+    saveLayout();
 }
 
-/******************************************************************
- * 3) Configuration and Persistence
- ******************************************************************/
 let currentConfigWidget = null;
 
 function openConfig(id) {
-  const w = widgets.find(w => w.id === id);
-  if (!w) return;
-  currentConfigWidget = w.inst;
-  document.getElementById('configForm').innerHTML = w.inst.getConfigForm() || 'No configuration options.';
-  w.inst.onConfigFormRendered?.();
-  document.getElementById('configModal').style.display = 'block';
+    const node = grid.getGridItems().find(el => el.querySelector(`#${id}`));
+    if (!node || !node.widgetInstance) return;
+    
+    currentConfigWidget = node.widgetInstance;
+    document.getElementById('configForm').innerHTML = currentConfigWidget.getConfigForm() || 'No configuration options.';
+    currentConfigWidget.onConfigFormRendered?.();
+    document.getElementById('configModal').style.display = 'block';
 }
 
 function closeModal() {
@@ -434,7 +423,7 @@ function saveConfig() {
     const newTopics = new Set(Array.isArray(inst.topic) ? inst.topic : [inst.topic]);
     const oldTopics = new Set(Array.isArray(inst.oldTopic) ? inst.oldTopic : [inst.oldTopic]);
     oldTopics.forEach(oldTopic => {
-      if (oldTopic && !newTopics.has(oldTopic) && !widgets.some(w => w.inst.id !== inst.id && (Array.isArray(w.inst.topic) ? w.inst.topic : [w.inst.topic]).includes(oldTopic))) {
+      if (oldTopic && !newTopics.has(oldTopic) && !grid.getGridItems().some(el => el.widgetInstance.id !== inst.id && (Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic]).includes(oldTopic))) {
         client.unsubscribe(oldTopic);
       }
     });
@@ -443,7 +432,7 @@ function saveConfig() {
     });
   }
   
-  const node = widgets.find(w => w.inst.id === inst.id)?.node;
+  const node = grid.getGridItems().find(el => el.widgetInstance.id === inst.id);
   if (node) {
     const topicDisplay = Array.isArray(inst.topic) ? inst.topic.join(', ') : (inst.topic || 'No Topic');
     node.querySelector('.widget-header-topic').textContent = inst.config?.title || topicDisplay;
@@ -454,11 +443,19 @@ function saveConfig() {
 
 function serializeGrid(targetGrid) {
     if (!targetGrid) return [];
-    return targetGrid.save(false).map(n => {
-        const widget = widgets.find(w => w.node === n.el);
-        if (!widget) return null;
-        let children = widget.inst.nestedGrid ? serializeGrid(widget.inst.nestedGrid) : [];
-        return { x: n.x, y: n.y, w: n.w, h: n.h, type: widget.type, options: widget.inst.getOptions?.() || {}, children };
+    const gridItems = targetGrid.getGridItems();
+    return gridItems.map(el => {
+        const node = el.gridstackNode;
+        const inst = el.widgetInstance;
+        if (!node || !inst) return null;
+
+        let children = inst.nestedGrid ? serializeGrid(inst.nestedGrid) : [];
+        return { 
+            x: node.x, y: node.y, w: node.w, h: node.h, 
+            type: el.widgetType, 
+            options: inst.getOptions?.() || {}, 
+            children 
+        };
     }).filter(item => item !== null);
 }
 
@@ -473,10 +470,10 @@ async function loadGrid(targetGrid, items) {
         const gridOpts = { x: item.x, y: item.y, w: item.w, h: item.h };
         await addWidget(item.type, targetGrid, item.options, gridOpts);
         if (item.children && item.children.length > 0) {
-            const parentWidget = widgets[widgets.length - 1];
-            if (parentWidget && parentWidget.inst.nestedGrid) {
-                parentWidget.inst.nestedGrid.removeAll(false);
-                await loadGrid(parentWidget.inst.nestedGrid, item.children);
+            const parentEl = grid.getGridItems().find(el => el.gridstackNode.x === item.x && el.gridstackNode.y === item.y);
+            if (parentEl && parentEl.widgetInstance.nestedGrid) {
+                parentEl.widgetInstance.nestedGrid.removeAll(false);
+                await loadGrid(parentEl.widgetInstance.nestedGrid, item.children);
             }
         }
     }
@@ -486,8 +483,7 @@ async function loadLayout() {
   const saved = localStorage.getItem('dashboardLayout');
   if (!saved) return;
   if (!grid) return;
-  grid.removeAll(false);
-  widgets.length = 0;
+  grid.removeAll(true);
   const data = JSON.parse(saved);
   await loadGrid(grid, data);
 }
@@ -496,17 +492,17 @@ function clearDashboard() {
   if (confirm('Clear the entire dashboard and delete the saved layout?')) {
     localStorage.removeItem('dashboardLayout');
     grid.removeAll(true);
-    widgets.length = 0;
   }
 }
 
-/******************************************************************
- * 4) Theme and URL Management
- ******************************************************************/
 function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('dashboardTheme', theme);
-  widgets.forEach(w => w.inst.onThemeChanged?.());
+  grid.getGridItems().forEach(el => {
+    if (el && el.widgetInstance) {
+        el.widgetInstance.onThemeChanged?.();
+    }
+  });
 }
 
 async function generateShareableUrl() {
@@ -565,8 +561,7 @@ async function loadFromUrl() {
         document.getElementById('themeSelector').value = theme;
         
         if (grid) {
-            grid.removeAll(false);
-            widgets.length = 0;
+            grid.removeAll(true);
             await loadGrid(grid, layout);
         }
         return true;
@@ -577,9 +572,6 @@ async function loadFromUrl() {
     }
 }
 
-/******************************************************************
- * 5) Event Handlers and Startup
- ******************************************************************/
 window.openConfig = openConfig;
 window.closeModal = closeModal;
 window.saveConfig = saveConfig;
