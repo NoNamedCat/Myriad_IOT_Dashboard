@@ -201,8 +201,18 @@ export default class DeviceMapWidget extends BaseWidget {
       if (data.childDashboardTemplate && data.variables) {
           marker.on('click', () => {
               try {
-                  const templateString = resolveTemplate(JSON.stringify(data.childDashboardTemplate), data.variables);
+                  // --- INICIO: CORRECCIÓN ---
+                  // 1. Asegurarse de que la plantilla sea un objeto
+                  const templateObject = typeof data.childDashboardTemplate === 'string'
+                      ? JSON.parse(data.childDashboardTemplate)
+                      : data.childDashboardTemplate;
+
+                  // 2. Convertir el objeto a string para reemplazar las variables
+                  const templateString = resolveTemplate(JSON.stringify(templateObject), data.variables);
+                  
+                  // 3. Parsear el string final para obtener el objeto de estado completo
                   const finalState = JSON.parse(templateString);
+                  // --- FIN: CORRECCIÓN ---
 
                   const compressed = pako.deflate(JSON.stringify(finalState), { level: 9 });
                   const dataToEncode = btoa(String.fromCharCode.apply(null, compressed));
