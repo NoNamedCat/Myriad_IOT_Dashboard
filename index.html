@@ -76,9 +76,7 @@
   #dashboardManagerList li .name { flex-grow: 1; }
   #dashboardManagerList li .actions button { font-size: 11px; padding: 3px 6px; margin-left: 5px; }
 
-  /* --- INICIO: NUEVO ESTILO PARA ATRIBUCIÓN DE MAPA --- */
   .leaflet-control-attribution { font-size: 9px !important; }
-  /* --- FIN: NUEVO ESTILO --- */
 </style>
 </head>
 <body class="sidebar-collapsed">
@@ -128,6 +126,12 @@
             <option value="coffee">Coffee</option>
             <option value="midnight">Midnight</option>
             <option value="solar-vanilla">Solar Vanilla</option>
+            <option value="sunset">Sunset</option>
+            <option value="arctic">Arctic</option>
+            <option value="vintage">Vintage</option>
+            <option value="cyberpunk">Cyberpunk</option>
+            <option value="minty">Minty</option>
+            <option value="dracula">Dracula</option>
         </select>
     </div>
 
@@ -199,10 +203,9 @@ let grid = null;
 let manualDisconnect = false;
 let currentDashboardName = 'Default';
 
-// --- INICIO: NUEVA FUNCIÓN PARA EL ATAJO DE TECLADO ---
 function handleKeydown(e) {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        e.preventDefault(); // Evita que se abran los marcadores del navegador
+        e.preventDefault();
         toggleDesignClientView();
     }
 }
@@ -210,22 +213,17 @@ function handleKeydown(e) {
 function toggleDesignClientView() {
     document.body.classList.toggle('view-only-mode');
     const isClientView = document.body.classList.contains('view-only-mode');
-
     if (isClientView) {
-        grid.disable(); // Desactiva la edición (arrastrar, redimensionar)
+        grid.disable();
     } else {
-        grid.enable(); // Activa la edición
+        grid.enable();
     }
-
-    // Forza un redibujado de los widgets para ajustar el tamaño
     grid.getGridItems().forEach(el => {
         if (el && el.widgetInstance && typeof el.widgetInstance.onResize === 'function') {
             el.widgetInstance.onResize();
         }
     });
 }
-// --- FIN: NUEVA FUNCIÓN ---
-
 
 async function initializeApp() {
     if (!window.GridStack || !window.pako || !window.JSZip) { 
@@ -254,9 +252,7 @@ async function initializeApp() {
 
     connect();
     
-    // --- INICIO: REGISTRO DEL EVENTO DE TECLADO ---
     document.addEventListener('keydown', handleKeydown);
-    // --- FIN: REGISTRO DEL EVENTO ---
     
     document.getElementById('sidebar-toggle').onclick = () => document.body.classList.toggle('sidebar-collapsed');
     document.getElementById('addBtn').onclick = () => addWidget(document.getElementById('widgetSelect').value, grid); 
@@ -289,6 +285,8 @@ async function initializeApp() {
     document.getElementById('themeSelector').value = savedTheme;
     document.body.setAttribute('data-theme', savedTheme);
 }
+
+// ... (El resto del código JavaScript no necesita cambios y se mantiene igual)
 
 function getSavedDashboards() {
     return JSON.parse(localStorage.getItem('myriadDashboards')) || {};
