@@ -1,3 +1,4 @@
+// widgets/console.js
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
 
@@ -5,9 +6,10 @@ export default class ConsoleWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
     super(id, container, publishFn, parentGrid);
     this.config = {
+      ...this.config, // Hereda loggingEnabled y loggingLimit
       placeholder: 'Type a command...',
       max_lines: 100,
-      echoEnabled: true, // Opción de eco activada por defecto
+      echoEnabled: true,
     };
     this.publishTopic = this.topic;
     this.render();
@@ -36,13 +38,11 @@ export default class ConsoleWidget extends BaseWidget {
     });
   }
 
-  // --- LÓGICA DE ENVÍO ACTUALIZADA ---
   sendCommand() {
     const command = this.inputBox.value.trim();
     if (command) {
       this.publish(this.publishTopic, command);
 
-      // Solo muestra el eco si está activado o si los topics son diferentes
       if (this.config.echoEnabled || this.publishTopic !== this.topic) {
         this.addLogEntry(`> ${command}`, 'sent');
       }
@@ -52,6 +52,9 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   onMessage(payload) {
+    // Llama al onMessage de la clase base para manejar el logging
+    super.onMessage(payload); 
+    
     const val = decode(payload, this.jsonPath);
     this.addLogEntry(val, 'received');
   }
@@ -75,11 +78,9 @@ export default class ConsoleWidget extends BaseWidget {
     this.logArea.scrollTop = this.logArea.scrollHeight;
   }
 
-  // --- FORMULARIO DE CONFIGURACIÓN ACTUALIZADO ---
   getConfigForm() {
-    return `
-      <label>Subscription Topic (Incoming):</label>
-      <input id="cfg_topic" type="text" value="${this.topic}">
+    // Reutiliza el formulario base y añade las opciones específicas de la consola
+    return super.getBaseConfigForm() + `
       <label>Publish Topic (Outgoing):</label>
       <input id="cfg_publishTopic" type="text" value="${this.publishTopic}">
       <hr>
@@ -87,7 +88,7 @@ export default class ConsoleWidget extends BaseWidget {
         <input type="checkbox" id="cfg_echoEnabled" ${this.config.echoEnabled ? 'checked' : ''}>
         Enable Echo (show sent messages)
       </label>
-      <small>If disabled, sent messages will only be hidden if Subscription and Publish topics are the same.</small>
+      <small>If disabled, sent messages will be hidden only if Subscription and Publish topics are the same.</small>
       <hr>
       <label>Placeholder Text:</label>
       <input id="cfg_placeholder" type="text" value="${this.config.placeholder}">
@@ -97,9 +98,7 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   saveConfig() {
-    // No se llama a super.saveBaseConfig() para manejar los dos topics por separado
-    this.oldTopic = this.topic;
-    this.topic = document.getElementById('cfg_topic').value.trim();
+    super.saveBaseConfig(); // Guarda la configuración base (topic, logging, etc.)
     this.publishTopic = document.getElementById('cfg_publishTopic').value.trim();
     this.config.placeholder = document.getElementById('cfg_placeholder').value;
     this.config.max_lines = parseInt(document.getElementById('cfg_max_lines').value, 10) || 100;
@@ -108,11 +107,13 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   getOptions() {
-      return { 
-          topic: this.topic, 
-          jsonPath: this.jsonPath, 
-          publishTopic: this.publishTopic, 
-          ...this.config 
+      // Combina las opciones base con las de este widget
+      return {
+        ...super.getOptions(),
+        publishTopic: this.publishTopic,
+        placeholder: this.config.placeholder,
+        max_lines: this.config.max_lines,
+        echoEnabled: this.config.echoEnabled,
       };
   }
 
