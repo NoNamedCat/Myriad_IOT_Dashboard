@@ -1,5 +1,6 @@
 // widgets/base.js
 
+// --- CORRECCIÓN: La ruta ahora usa '../' para subir un nivel de directorio ---
 import { getDataLogger } from '../libs/datalogger.js';
 
 export default class BaseWidget {
@@ -12,32 +13,27 @@ export default class BaseWidget {
     this.topic = 'no/topic/defined';
     this.jsonPath = '';
 
-    // --- INICIO: NUEVA CONFIGURACIÓN DE LOGGING ---
     this.config = {
       ...this.config,
       loggingEnabled: false,
-      loggingLimit: 50, // Límite por defecto en KB
+      loggingLimit: 50,
     };
     
     if (this.config.loggingEnabled) {
         this.logger = getDataLogger(this.id, this.config.loggingLimit);
     }
-    // --- FIN: NUEVA CONFIGURACIÓN DE LOGGING ---
   }
 
   onMessage(payload, topic) {
-      // --- INICIO: GUARDAR DATOS SI EL LOGGING ESTÁ ACTIVO ---
       if (this.config.loggingEnabled && this.logger) {
           const textPayload = new TextDecoder().decode(payload);
           this.logger.log(textPayload);
       }
-      // --- FIN: GUARDAR DATOS ---
   }
 
   onThemeChanged() {}
   onConfigFormRendered() {}
 
-  // --- INICIO: FORMULARIO DE CONFIGURACIÓN ACTUALIZADO ---
   getBaseConfigForm() {
     const usage = this.logger ? this.logger.getUsage() : '0.00';
     return `
@@ -65,7 +61,6 @@ export default class BaseWidget {
       this.topic = newTopic;
       this.jsonPath = document.getElementById('cfg_jsonPath').value.trim();
 
-      // --- INICIO: GUARDAR CONFIGURACIÓN DE LOGGING ---
       this.config.loggingEnabled = document.getElementById('cfg_loggingEnabled').checked;
       this.config.loggingLimit = parseInt(document.getElementById('cfg_loggingLimit').value, 10) || 50;
 
@@ -75,9 +70,7 @@ export default class BaseWidget {
           this.logger?.clear();
           this.logger = null;
       }
-      // --- FIN: GUARDAR CONFIGURACIÓN DE LOGGING ---
   }
-  // --- FIN: FORMULARIO DE CONFIGURACIÓN ACTUALIZADO ---
 
   getConfigForm() { return 'No configuration options available.'; }
   saveConfig() {}
