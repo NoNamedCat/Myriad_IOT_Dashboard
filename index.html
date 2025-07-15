@@ -169,7 +169,7 @@
         <button id="toggleHeadersBtn" type="button">Toggle Headers</button>
         <button id="copyTemplateBtn" type="button" style="background-color: #ffc107; color: black;">Copy Layout as Template</button>
     </div>
-    </aside>
+</aside>
 
 <div id="main-content">
     <nav id="navbar">
@@ -220,13 +220,39 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script type="module">
-// --- El código JavaScript de la respuesta anterior se inserta aquí. ---
-// --- No se necesitan cambios en el JavaScript. ---
 let client = null;
 const widgetMap = {};
 let grid = null;
 let manualDisconnect = false;
 let currentDashboardName = 'Default';
+
+// --- INICIO: NUEVA FUNCIÓN PARA EL ATAJO DE TECLADO ---
+function handleKeydown(e) {
+    if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
+        e.preventDefault(); // Evita que se abran los marcadores del navegador
+        toggleDesignClientView();
+    }
+}
+
+function toggleDesignClientView() {
+    document.body.classList.toggle('view-only-mode');
+    const isClientView = document.body.classList.contains('view-only-mode');
+
+    if (isClientView) {
+        grid.disable(); // Desactiva la edición (arrastrar, redimensionar)
+    } else {
+        grid.enable(); // Activa la edición
+    }
+
+    // Forza un redibujado de los widgets para ajustar el tamaño
+    grid.getGridItems().forEach(el => {
+        if (el && el.widgetInstance && typeof el.widgetInstance.onResize === 'function') {
+            el.widgetInstance.onResize();
+        }
+    });
+}
+// --- FIN: NUEVA FUNCIÓN ---
+
 
 async function initializeApp() {
     if (!window.GridStack || !window.pako || !window.JSZip) { 
@@ -254,6 +280,10 @@ async function initializeApp() {
     if (areHeadersHidden) document.querySelector('.main-grid').classList.add('headers-hidden');
 
     connect();
+    
+    // --- INICIO: REGISTRO DEL EVENTO DE TECLADO ---
+    document.addEventListener('keydown', handleKeydown);
+    // --- FIN: REGISTRO DEL EVENTO ---
     
     document.getElementById('sidebar-toggle').onclick = () => document.body.classList.toggle('sidebar-collapsed');
     document.getElementById('addBtn').onclick = () => addWidget(document.getElementById('widgetSelect').value, grid); 
