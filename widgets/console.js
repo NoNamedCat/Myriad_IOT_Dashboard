@@ -7,6 +7,7 @@ export default class ConsoleWidget extends BaseWidget {
     this.config = {
       placeholder: 'Type a command...',
       max_lines: 100,
+      echoEnabled: true, // Opción de eco activada por defecto
     };
     this.publishTopic = this.topic;
     this.render();
@@ -35,11 +36,17 @@ export default class ConsoleWidget extends BaseWidget {
     });
   }
 
+  // --- LÓGICA DE ENVÍO ACTUALIZADA ---
   sendCommand() {
     const command = this.inputBox.value.trim();
     if (command) {
       this.publish(this.publishTopic, command);
-      this.addLogEntry(`> ${command}`, 'sent');
+
+      // Solo muestra el eco si está activado o si los topics son diferentes
+      if (this.config.echoEnabled || this.publishTopic !== this.topic) {
+        this.addLogEntry(`> ${command}`, 'sent');
+      }
+      
       this.inputBox.value = '';
     }
   }
@@ -68,10 +75,20 @@ export default class ConsoleWidget extends BaseWidget {
     this.logArea.scrollTop = this.logArea.scrollHeight;
   }
 
+  // --- FORMULARIO DE CONFIGURACIÓN ACTUALIZADO ---
   getConfigForm() {
-    return super.getBaseConfigForm() + `
-      <label>Publish Topic (Commands):</label>
+    return `
+      <label>Subscription Topic (Incoming):</label>
+      <input id="cfg_topic" type="text" value="${this.topic}">
+      <label>Publish Topic (Outgoing):</label>
       <input id="cfg_publishTopic" type="text" value="${this.publishTopic}">
+      <hr>
+      <label>
+        <input type="checkbox" id="cfg_echoEnabled" ${this.config.echoEnabled ? 'checked' : ''}>
+        Enable Echo (show sent messages)
+      </label>
+      <small>If disabled, sent messages will only be hidden if Subscription and Publish topics are the same.</small>
+      <hr>
       <label>Placeholder Text:</label>
       <input id="cfg_placeholder" type="text" value="${this.config.placeholder}">
       <label>Max Lines:</label>
@@ -80,22 +97,27 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   saveConfig() {
-    super.saveBaseConfig();
+    // No se llama a super.saveBaseConfig() para manejar los dos topics por separado
+    this.oldTopic = this.topic;
+    this.topic = document.getElementById('cfg_topic').value.trim();
     this.publishTopic = document.getElementById('cfg_publishTopic').value.trim();
     this.config.placeholder = document.getElementById('cfg_placeholder').value;
     this.config.max_lines = parseInt(document.getElementById('cfg_max_lines').value, 10) || 100;
+    this.config.echoEnabled = document.getElementById('cfg_echoEnabled').checked;
     this.render();
   }
 
   getOptions() {
-      return { topic: this.topic, jsonPath: this.jsonPath, publishTopic: this.publishTopic, ...this.config };
+      return { 
+          topic: this.topic, 
+          jsonPath: this.jsonPath, 
+          publishTopic: this.publishTopic, 
+          ...this.config 
+      };
   }
 
   setOptions(o) {
       super.setOptions(o);
-      // --- CORRECCIÓN ---
-      // Comprueba si 'publishTopic' existe en el objeto de opciones antes de asignarlo.
-      // Esto evita que una cadena vacía sea ignorada.
       this.publishTopic = o.publishTopic !== undefined ? o.publishTopic : this.topic;
       this.config = { ...this.config, ...o };
       this.render();
