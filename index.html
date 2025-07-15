@@ -8,157 +8,144 @@
 <link rel="icon" href="data:,">
 <style>
   :root, [data-theme="light"] {
-    --bg-color: #f2f2f2;
+    --bg-color: #f0f3f5;
     --panel-bg-color: #ffffff;
     --widget-bg-color: #ffffff;
     --text-color: #212529;
-    --border-color: #ddd;
+    --border-color: #dee2e6;
     --primary-color: #007bff;
     --primary-text-color: #ffffff;
+    --secondary-color: #e9ecef;
+    --danger-color: #dc3545;
   }
-
   [data-theme="dark"] {
     --bg-color: #212529;
     --panel-bg-color: #343a40;
     --widget-bg-color: #495057;
     --text-color: #f8f9fa;
-    --border-color: #6c757d;
+    --border-color: #495057;
     --primary-color: #17a2b8;
     --primary-text-color: #ffffff;
-  }
-
-  [data-theme="sepia"] {
-    --bg-color: #f4ecd8;
-    --panel-bg-color: #eaddc7;
-    --widget-bg-color: #fff8e7;
-    --text-color: #5b4636;
-    --border-color: #d3c5a8;
-    --primary-color: #8c6b4f;
-    --primary-text-color: #ffffff;
+    --secondary-color: #6c757d;
+    --danger-color: #c82333;
   }
   
-  [data-theme="ocean"] {
-    --bg-color: #e0f7fa;
-    --panel-bg-color: #b2ebf2;
-    --widget-bg-color: #ffffff;
-    --text-color: #004d40;
-    --border-color: #4dd0e1;
-    --primary-color: #0097a7;
-    --primary-text-color: #ffffff;
-  }
+  [data-theme="sepia"] { --bg-color: #f4ecd8; --panel-bg-color: #eaddc7; --widget-bg-color: #fff8e7; --text-color: #5b4636; --border-color: #d3c5a8; --primary-color: #8c6b4f; --secondary-color: #d3c5a8; --danger-color: #a55449; }
+  [data-theme="ocean"] { --bg-color: #e0f7fa; --panel-bg-color: #b2ebf2; --widget-bg-color: #ffffff; --text-color: #004d40; --border-color: #4dd0e1; --primary-color: #0097a7; --secondary-color: #80deea; --danger-color: #e57373; }
+  [data-theme="forest"] { --bg-color: #2e3d32; --panel-bg-color: #4a5d4d; --widget-bg-color: #6f8a6f; --text-color: #e8f5e9; --border-color: #556b2f; --primary-color: #8fbc8f; --primary-text-color: #000000; --secondary-color: #a9b7a9; --danger-color: #cd5c5c; }
   
-  [data-theme="forest"] {
-    --bg-color: #2e3d32;
-    --panel-bg-color: #4a5d4d;
-    --widget-bg-color: #6f8a6f;
-    --text-color: #e8f5e9;
-    --border-color: #556b2f;
-    --primary-color: #8fbc8f;
-    --primary-text-color: #000000;
-  }
-
   [data-theme="matrix"] {
     --bg-color: #000000;
-    --panel-bg-color: #0d0d0d;
+    --panel-bg-color: #0D0D0D;
     --widget-bg-color: #0a0a0a;
-    --text-color: #00ff00;
-    --border-color: #003300;
-    --primary-color: #008f11;
-    --primary-text-color: #000000;
+    --text-color: #39ff14; 
+    --border-color: #005200; 
+    --primary-color: #39ff14; 
+    --primary-text-color: #000000; 
+    --secondary-color: #005000; 
+    --danger-color: #ff0000;
   }
 
-  [data-theme="coffee"] {
-    --bg-color: #ece0d1;
-    --panel-bg-color: #dbc1ac;
-    --widget-bg-color: #f5f5f5;
-    --text-color: #3e2723;
-    --border-color: #a1887f;
-    --primary-color: #6d4c41;
-    --primary-text-color: #ffffff;
-  }
+  [data-theme="coffee"] { --bg-color: #ece0d1; --panel-bg-color: #dbc1ac; --widget-bg-color: #f5f5f5; --text-color: #3e2723; --border-color: #a1887f; --primary-color: #6d4c41; --secondary-color: #bcaaa4; --danger-color: #d32f2f; }
+  [data-theme="midnight"] { --bg-color: #19192a; --panel-bg-color: #2c2c44; --widget-bg-color: #3c3c5c; --text-color: #e0e0ff; --border-color: #50507a; --primary-color: #7e57c2; --secondary-color: #5c6bc0; --danger-color: #ef5350; }
+  [data-theme="solar-vanilla"] { --bg-color: #fdf6e3; --panel-bg-color: #f5eccc; --widget-bg-color: #ffffff; --text-color: #657b83; --border-color: #eee8d5; --primary-color: #b58900; --secondary-color: #d33682; --danger-color: #dc322f; }
 
-  [data-theme="midnight"] {
-    --bg-color: #19192a;
-    --panel-bg-color: #2c2c44;
-    --widget-bg-color: #3c3c5c;
-    --text-color: #e0e0ff;
-    --border-color: #50507a;
-    --primary-color: #7e57c2;
-    --primary-text-color: #ffffff;
-  }
-
-  [data-theme="solar-vanilla"] {
-    --bg-color: #fdf6e3;
-    --panel-bg-color: #f5eccc;
-    --widget-bg-color: #ffffff;
-    --text-color: #657b83;
-    --border-color: #eee8d5;
-    --primary-color: #b58900;
-    --primary-text-color: #ffffff;
-  }
-
-  :root, [data-theme="light"] { --secondary-color: #e9ecef; --danger-color: #dc3545; }
-  [data-theme="dark"] { --secondary-color: #6c757d; --danger-color: #c82333; }
-  [data-theme="sepia"] { --secondary-color: #d3c5a8; --danger-color: #a55449; }
-  [data-theme="ocean"] { --secondary-color: #80deea; --danger-color: #e57373; }
-  [data-theme="forest"] { --secondary-color: #a9b7a9; --danger-color: #cd5c5c; }
-  [data-theme="matrix"] { --secondary-color: #005000; --danger-color: #ff0000; }
-  [data-theme="coffee"] { --secondary-color: #bcaaa4; --danger-color: #d32f2f; }
-  [data-theme="midnight"] { --secondary-color: #5c6bc0; --danger-color: #ef5350; }
-  [data-theme="solar-vanilla"] { --secondary-color: #d33682; --danger-color: #dc322f; }
+  body{ margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg-color); color: var(--text-color); display: flex; height: 100vh; overflow: hidden; }
   
-  body{ margin:0; font-family:Arial,Helvetica,sans-serif; background: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
-  #panel{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:8px; background: var(--panel-bg-color); border-bottom:1px solid var(--border-color); transition: background-color 0.3s, border-color 0.3s; }
-  #panel label, #panel button, #panel select, #panel input, #panel span { color: var(--text-color); }
-  #panel input, #panel select { background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; }
-  #panel button { background-color: var(--primary-color); color: var(--primary-text-color); border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-  #panel button:disabled { background-color: var(--secondary-color); cursor: not-allowed; }
-  .grid-stack-item-content{ background: var(--widget-bg-color); border:1px solid var(--border-color); color: var(--text-color); border-radius:4px; overflow:hidden; display:flex; flex-direction:column; transition: background-color 0.3s, border-color 0.3s, color 0.3s; }
-  .widget-header{ background: var(--primary-color); color: var(--primary-text-color); padding:4px 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center; transition: background-color 0.3s; cursor: move; }
+  #sidebar { width: 280px; background-color: var(--panel-bg-color); border-right: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; transition: margin-left 0.3s ease; overflow-y: auto; }
+  body.sidebar-collapsed #sidebar { margin-left: -300px; }
+  #main-content { flex-grow: 1; display: flex; flex-direction: column; height: 100vh; }
+  #navbar { display: flex; align-items: center; padding: 0 15px; height: 50px; background-color: var(--panel-bg-color); border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+  #navbar #dashboard-title-group { flex-grow: 1; display: flex; align-items: center; }
+  #navbar #currentDashboardName { font-size: 1.2rem; font-weight: bold; }
+  #navbar .actions-group button { margin-left: 10px; padding: 5px 10px; background-color: var(--primary-color); color: var(--primary-text-color); border: none; cursor: pointer; border-radius: 4px; }
+  #sidebar-toggle { font-size: 1.5rem; background: none; border: none; cursor: pointer; color: var(--text-color); margin-right: 15px; }
+
+  .config-section { border-top: 1px solid var(--border-color); margin-top: 15px; padding-top: 15px; }
+  .config-section h4 { margin-top: 0; color: var(--text-color); }
+  .config-section label, .config-section button, .config-section select, .config-section input, .config-section span { width: 100%; box-sizing: border-box; margin-bottom: 8px; color: var(--text-color); }
+  .config-section input, .config-section select { padding: 8px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; }
+  .config-section input[type=checkbox] { width: auto; margin-right: 5px; vertical-align: middle; }
+  #sidebar button { width: 100%; padding: 8px; background-color: var(--primary-color); color: var(--primary-text-color); border: none; cursor: pointer; border-radius: 4px; }
+  #sidebar button:disabled { background-color: var(--secondary-color); cursor: not-allowed; }
+  
+  #connection-form label { display: block; margin-bottom: 5px; color: var(--text-color); }
+  #connection-form input { display: block; width: 100%; }
+  #connection-form .inline-label { display: inline-flex; align-items: center; width: auto; margin-top: 10px; }
+
+  .grid-stack-item-content{ background: var(--widget-bg-color); border:1px solid var(--border-color); color: var(--text-color); border-radius:4px; overflow:hidden; display:flex; flex-direction:column; }
+  .widget-header{ background: var(--primary-color); color: var(--primary-text-color); padding:4px 8px;font-size:13px;display:flex;justify-content:space-between;align-items:center; cursor: move; }
   .widget-header-topic{flex-grow:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px}
   .widget-content{flex-grow:1;padding:8px;overflow:auto}
+  
+  .headers-hidden .widget-header { display: none; }
+  .headers-hidden .grid-stack-item-content .widget-content { padding-top: 12px; }
+
+  .view-only-mode #sidebar, .view-only-mode #navbar { display: none; }
+  .view-only-mode .widget-header { display: none; }
+  .view-only-mode .grid-stack-item-content .widget-content { padding-top: 12px; }
+
   .config-btn,.del-btn{background:#6c757d;border:none;color:#fff;font-size:12px;padding:0 4px;cursor:pointer;border-radius:2px}
   .del-btn{background:var(--danger-color)}
   .modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5)}
-  /* --- CORRECCIÓN --- Se han modificado los estilos del modal para un mejor centrado y para añadir scroll. */
-  .modal-content{ 
-    background: var(--widget-bg-color); 
-    border: 1px solid var(--border-color); 
-    padding:20px;
-    width:350px;
-    border-radius:5px;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-height: 85vh; /* Altura máxima para evitar que se salga de la pantalla */
-    display: flex;
-    flex-direction: column;
-  }
+  .modal-content{ background: var(--widget-bg-color); border: 1px solid var(--border-color); padding:20px; width:450px; border-radius:5px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: 85vh; display: flex; flex-direction: column; }
   .modal-content h3{margin-top:0}
-  .modal-content #configForm {
-      overflow-y: auto; /* El scroll ahora se aplica aquí, al formulario */
-      flex-grow: 1;
-      padding-right: 10px; /* Espacio para la barra de scroll */
-  }
-  .modal-content .modal-footer {
-      flex-shrink: 0;
-      padding-top: 15px;
-      border-top: 1px solid var(--border-color);
-      margin-top: 10px;
-  }
+  .modal-content #configForm, #dashboardManagerList { overflow-y: auto; flex-grow: 1; padding-right: 10px; }
+  .modal-content .modal-footer { flex-shrink: 0; padding-top: 15px; border-top: 1px solid var(--border-color); margin-top: 10px; }
   .modal-content label{display:block;margin-bottom:6px;font-size:13px}
   .modal-content input, .modal-content textarea{ width:calc(100% - 12px); margin-bottom:10px; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 5px; }
   .modal-content button{ background-color: var(--primary-color); color: var(--primary-text-color); border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-  .grid-stack-item-content .grid-stack { background: rgba(0, 0, 0, 0.05); inset: 10px; margin-top: 40px; position: absolute; }
+  
+  #dashboardManagerList ul { list-style: none; padding: 0; }
+  #dashboardManagerList li { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color); }
+  #dashboardManagerList li:last-child { border-bottom: none; }
+  #dashboardManagerList li input[type=checkbox] { margin-right: 10px; }
+  #dashboardManagerList li .name { flex-grow: 1; }
+  #dashboardManagerList li .actions button { font-size: 11px; padding: 3px 6px; margin-left: 5px; }
+
+  /* --- INICIO: NUEVO ESTILO PARA ATRIBUCIÓN DE MAPA --- */
+  .leaflet-control-attribution { font-size: 9px !important; }
+  /* --- FIN: NUEVO ESTILO --- */
 </style>
 </head>
-<body data-theme="light">
+<body class="sidebar-collapsed">
 
-<div id="panel">
-    <form onsubmit="return false;" style="display: contents;">
-        <label>Theme:
-            <select id="themeSelector">
+<aside id="sidebar">
+    <div id="connection-form">
+        <h4>Connection</h4>
+        <form onsubmit="return false;">
+            <label for="broker">Broker:</label>
+            <input id="broker" value="broker.hivemq.com"/>
+
+            <label for="port">WS Port:</label>
+            <input id="port" type="number" value="8884"/>
+
+            <label for="username">User:</label>
+            <input id="username" autocomplete="username"/>
+
+            <label for="password">Password:</label>
+            <input id="password" type="password" autocomplete="current-password">
+
+            <label class="inline-label">
+                <input id="useSSL" type="checkbox" checked> Use SSL
+            </label>
+            <hr style="border-color: var(--border-color); width: 100%; margin: 15px 0;">
+            <label for="clientId">Client ID:</label>
+            <input id="clientId" disabled/>
+            <label class="inline-label">
+                <input id="randomClientId" type="checkbox" checked> Random
+            </label>
+        </form>
+        <div style="display: flex; gap: 5px; margin-top: 15px;">
+            <button id="connectBtn" type="button">Connect</button>
+            <button id="disconnectBtn" type="button" disabled>Disconnect</button>
+        </div>
+        <span id="status" style="margin-top: 10px; text-align: center;">Disconnected</span>
+    </div>
+    
+    <div class="config-section">
+        <h4>Theme</h4>
+        <select id="themeSelector">
             <option value="light">Light</option>
             <option value="dark">Dark</option>
             <option value="sepia">Sepia</option>
@@ -168,38 +155,59 @@
             <option value="coffee">Coffee</option>
             <option value="midnight">Midnight</option>
             <option value="solar-vanilla">Solar Vanilla</option>
-            </select>
-        </label>
-        <label>Broker:<input id="broker" value="broker.hivemq.com"/></label>
-        <label>WS Port:<input id="port" type="number" value="8884"/></label>
-        <label>User:<input id="username" autocomplete="username"/></label>
-        <label>Password:<input id="password" type="password" autocomplete="current-password"></label>
-        <label><input id="useSSL" type="checkbox" checked> Use SSL</label>
-        <label>Client ID:<input id="clientId" disabled/></label>
-        <label><input id="randomClientId" type="checkbox" checked> Random</label>
-        <button id="connectBtn" type="button">Connect</button>
-        <button id="disconnectBtn" type="button" disabled>Disconnect</button>
-        <span id="status">Disconnected</span>
-    </form>
-</div>
-<div id="panel">
-  <select id="widgetSelect"><option value="">-- Loading --</option></select>
-  <button id="addBtn" type="button" disabled>Add Widget</button>
-  <button id="saveBtn" type="button">Save Local</button>
-  <button id="loadBtn" type="button">Load Local</button>
-  <button id="clearBtn" type="button">Clear</button>
-  <button id="shareBtn" type="button" style="background-color: #28a745;">Share URL</button>
-</div>
+        </select>
+    </div>
 
-<div class="grid-stack main-grid"></div>
+    <div class="config-section">
+        <h4>Widgets</h4>
+        <select id="widgetSelect"><option value="">-- Loading --</option></select>
+        <button id="addBtn" type="button" disabled>Add Widget</button>
+    </div>
+    
+    <div class="config-section">
+        <h4>Tools</h4>
+        <button id="toggleHeadersBtn" type="button">Toggle Headers</button>
+        <button id="copyTemplateBtn" type="button" style="background-color: #ffc107; color: black;">Copy Layout as Template</button>
+    </div>
+</aside>
+
+<div id="main-content">
+    <nav id="navbar">
+        <button id="sidebar-toggle">☰</button>
+        <div id="dashboard-title-group">
+            <h4 id="currentDashboardName" style="margin: 0;">Default</h4>
+        </div>
+        <div class="actions-group">
+            <button id="saveBtn" type="button">Save</button>
+            <button id="manageDashboardsBtn" type="button">Manage</button>
+            <button id="shareBtn" type="button" style="background-color: #28a745;">Share</button>
+            <button id="shareClientBtn" type="button" style="background-color: #17a2b8;">Share View-Only</button>
+        </div>
+    </nav>
+    
+    <div class="grid-stack main-grid" style="flex-grow: 1;"></div>
+</div>
 
 <div id="configModal" class="modal">
   <div class="modal-content">
     <h3>Configuration</h3>
     <div id="configForm"></div>
     <div class="modal-footer">
-      <button onclick="closeModal()">Cancel</button>
-      <button onclick="saveConfig()">Save</button>
+      <button class="modal-cancel-btn">Cancel</button>
+      <button class="modal-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="dashboardManagerModal" class="modal">
+  <div class="modal-content">
+    <h3>Dashboard Manager</h3>
+    <div id="dashboardManagerList"></div>
+    <div class="modal-footer">
+      <input type="file" id="importFile" accept=".zip" style="display: none;">
+      <button id="importBtn" type="button">Import from ZIP</button>
+      <button id="exportBtn" type="button">Export Selected</button>
+      <button class="modal-cancel-btn">Close</button>
     </div>
   </div>
 </div>
@@ -208,16 +216,20 @@
 <script src="libs/chart.umd.min.js" defer></script>
 <script src="libs/paho-mqtt.min.js" defer></script>
 <script src="libs/leaflet.js" defer></script>
+<script src="libs/pako.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script type="module">
+// --- El código JavaScript de la respuesta anterior se inserta aquí. ---
+// --- No se necesitan cambios en el JavaScript. ---
 let client = null;
 const widgetMap = {};
 let grid = null;
 let manualDisconnect = false;
+let currentDashboardName = 'Default';
 
-// --- FUNCIÓN DE INICIO MODIFICADA ---
 async function initializeApp() {
-    if (!window.GridStack) {
+    if (!window.GridStack || !window.pako || !window.JSZip) { 
         setTimeout(initializeApp, 50);
         return;
     }
@@ -228,50 +240,283 @@ async function initializeApp() {
         column: 12, 
         cellHeight: '2rem',
         margin: 5,
-        draggable: {
-            handle: '.widget-header',
-        }
+        draggable: { handle: '.widget-header' }
     }, '.main-grid');
 
-    // 1. Descubrir widgets PRIMERO y esperar a que termine
     await discoverWidgets();
-
-    // 2. Ahora, cargar desde URL o localStorage
     const loadedFromUrl = await loadFromUrl();
     if (!loadedFromUrl) {
-        loadLayout();
+        const lastLoaded = localStorage.getItem('lastLoadedDashboard') || 'Default';
+        loadDashboard(lastLoaded);
     }
+    
+    const areHeadersHidden = localStorage.getItem('dashboardHeadersHidden') === 'true';
+    if (areHeadersHidden) document.querySelector('.main-grid').classList.add('headers-hidden');
 
-    // 3. Conectar al broker
     connect();
-
-    // Asignación de eventos
-    const themeSelector = document.getElementById('themeSelector');
+    
+    document.getElementById('sidebar-toggle').onclick = () => document.body.classList.toggle('sidebar-collapsed');
     document.getElementById('addBtn').onclick = () => addWidget(document.getElementById('widgetSelect').value, grid); 
     document.getElementById('connectBtn').onclick = connect;
     document.getElementById('disconnectBtn').onclick = disconnect;
-    document.getElementById('saveBtn').onclick = saveLayout;
-    document.getElementById('loadBtn').onclick = loadLayout;
-    document.getElementById('clearBtn').onclick = clearDashboard;
-    document.getElementById('shareBtn').onclick = generateShareableUrl;
-    themeSelector.addEventListener('change', () => applyTheme(themeSelector.value));
-    
-    const randomClientIdCheckbox = document.getElementById('randomClientId');
-    const clientIdInput = document.getElementById('clientId');
-    randomClientIdCheckbox.addEventListener('change', () => {
-        clientIdInput.disabled = randomClientIdCheckbox.checked;
+    document.getElementById('saveBtn').onclick = () => saveCurrentDashboard();
+    document.getElementById('shareBtn').onclick = () => generateShareableUrl(false);
+    document.getElementById('shareClientBtn').onclick = () => generateShareableUrl(true);
+    document.getElementById('toggleHeadersBtn').onclick = toggleWidgetHeaders;
+    document.getElementById('copyTemplateBtn').onclick = copyLayoutAsTemplate;
+    document.getElementById('manageDashboardsBtn').onclick = openDashboardManager;
+    document.getElementById('importBtn').onclick = () => document.getElementById('importFile').click();
+    document.getElementById('importFile').onchange = (e) => importFromZip(e.target.files[0]);
+    document.getElementById('exportBtn').onclick = exportSelectedDashboards;
+    document.getElementById('themeSelector').addEventListener('change', (e) => applyTheme(e.target.value));
+    document.getElementById('randomClientId').addEventListener('change', (e) => {
+        document.getElementById('clientId').disabled = e.target.checked;
     });
 
-    grid.on('change', saveLayout);
+    document.querySelector('#configModal .modal-cancel-btn').onclick = () => closeModal('configModal');
+    document.querySelector('#configModal .modal-save-btn').onclick = saveConfig;
+    document.querySelector('#dashboardManagerModal .modal-cancel-btn').onclick = () => closeModal('dashboardManagerModal');
+
+    grid.on('change', () => saveCurrentDashboard(currentDashboardName, false));
     grid.on('resizestop', (event, el) => {
-        if (el.widgetInstance && el.widgetInstance.onResize) {
-            el.widgetInstance.onResize();
-        }
+        if (el.widgetInstance && el.widgetInstance.onResize) el.widgetInstance.onResize();
     });
 
     const savedTheme = localStorage.getItem('dashboardTheme') || 'light';
-    themeSelector.value = savedTheme;
+    document.getElementById('themeSelector').value = savedTheme;
     document.body.setAttribute('data-theme', savedTheme);
+}
+
+function getSavedDashboards() {
+    return JSON.parse(localStorage.getItem('myriadDashboards')) || {};
+}
+
+function saveDashboard(name, data) {
+    const dashboards = getSavedDashboards();
+    dashboards[name] = data;
+    localStorage.setItem('myriadDashboards', JSON.stringify(dashboards));
+}
+
+function deleteDashboard(name) {
+    if (name === 'Default') {
+        alert("Cannot delete the Default dashboard.");
+        return;
+    }
+    const dashboards = getSavedDashboards();
+    delete dashboards[name];
+    localStorage.setItem('myriadDashboards', JSON.stringify(dashboards));
+    openDashboardManager();
+}
+
+async function loadDashboard(name) {
+    const dashboards = getSavedDashboards();
+    let data = dashboards[name];
+    if (!data) {
+        console.warn(`Dashboard "${name}" not found. Creating and loading Default.`);
+        data = { layout: [], connection: {}, theme: 'light' };
+        saveDashboard('Default', data);
+    }
+
+    grid.removeAll(true);
+    await loadGrid(grid, data.layout);
+    
+    const { connection, theme } = data;
+    if(connection) {
+      document.getElementById('broker').value = connection.broker || 'broker.hivemq.com';
+      document.getElementById('port').value = connection.port || '8884';
+      document.getElementById('username').value = connection.username || '';
+      document.getElementById('password').value = connection.password || '';
+      document.getElementById('useSSL').checked = connection.useSSL !== false;
+    }
+    if(theme) {
+      applyTheme(theme);
+      document.getElementById('themeSelector').value = theme;
+    }
+    
+    document.getElementById('currentDashboardName').textContent = name;
+    currentDashboardName = name;
+    localStorage.setItem('lastLoadedDashboard', name);
+}
+
+function saveCurrentDashboard(name = currentDashboardName, promptForName = true) {
+    if (promptForName) {
+        const newName = prompt("Save dashboard as:", name);
+        if (!newName) return;
+        name = newName;
+    }
+    
+    const layout = serializeGrid(grid);
+    const connectionInfo = {
+        broker: document.getElementById('broker').value,
+        port: document.getElementById('port').value,
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        useSSL: document.getElementById('useSSL').checked,
+        clientId: document.getElementById('clientId').value,
+        randomClientId: document.getElementById('randomClientId').checked
+    };
+    const theme = document.getElementById('themeSelector').value;
+    
+    saveDashboard(name, { layout, connection: connectionInfo, theme });
+    
+    if (promptForName) {
+        document.getElementById('currentDashboardName').textContent = name;
+        currentDashboardName = name;
+    }
+}
+
+function openDashboardManager() {
+    const dashboards = getSavedDashboards();
+    const listContainer = document.getElementById('dashboardManagerList');
+    listContainer.innerHTML = '<ul></ul>';
+    const ul = listContainer.querySelector('ul');
+    
+    if (Object.keys(dashboards).length === 0) {
+        ul.innerHTML = '<li>No saved dashboards.</li>';
+    }
+
+    for (const name in dashboards) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <input type="checkbox" data-name="${name}" class="dashboard-checkbox">
+            <span class="name">${name}</span>
+            <span class="actions">
+                <button class="load-btn">Load</button>
+                <button class="rename-btn">Rename</button>
+                <button class="copy-btn">Copy</button>
+                ${name !== 'Default' ? `<button class="delete-btn" style="background-color: var(--danger-color)">Delete</button>` : ''}
+            </span>
+        `;
+        li.querySelector('.load-btn').onclick = () => { loadDashboard(name); closeModal('dashboardManagerModal'); };
+        li.querySelector('.rename-btn').onclick = () => renameDashboard(name);
+        li.querySelector('.copy-btn').onclick = () => copyDashboard(name);
+        const delBtn = li.querySelector('.delete-btn');
+        if (delBtn) delBtn.onclick = () => deleteDashboard(name);
+
+        ul.appendChild(li);
+    }
+    document.getElementById('dashboardManagerModal').style.display = 'block';
+}
+
+function renameDashboard(oldName) {
+    const newName = prompt(`Rename "${oldName}" to:`, oldName);
+    if (newName && newName !== oldName) {
+        const dashboards = getSavedDashboards();
+        if (dashboards[newName]) {
+            alert(`Dashboard "${newName}" already exists.`);
+            return;
+        }
+        dashboards[newName] = dashboards[oldName];
+        delete dashboards[oldName];
+        localStorage.setItem('myriadDashboards', JSON.stringify(dashboards));
+        if (currentDashboardName === oldName) {
+            currentDashboardName = newName;
+            document.getElementById('currentDashboardName').textContent = newName;
+        }
+        openDashboardManager();
+    }
+}
+
+function copyDashboard(name) {
+    const newName = prompt(`Copy "${name}" to:`, `${name}-copy`);
+    if (newName) {
+        const dashboards = getSavedDashboards();
+        if (dashboards[newName]) {
+            alert(`Dashboard "${newName}" already exists.`);
+            return;
+        }
+        dashboards[newName] = dashboards[name];
+        localStorage.setItem('myriadDashboards', JSON.stringify(dashboards));
+        openDashboardManager();
+    }
+}
+
+async function exportSelectedDashboards() {
+    const dashboards = getSavedDashboards();
+    const selected = Array.from(document.querySelectorAll('.dashboard-checkbox:checked')).map(cb => cb.dataset.name);
+    
+    if (selected.length === 0) {
+        alert("Please select at least one dashboard to export.");
+        return;
+    }
+
+    const zip = new JSZip();
+    selected.forEach(name => {
+        const data = dashboards[name];
+        zip.file(`${name}.json`, JSON.stringify(data, null, 2));
+    });
+    
+    const content = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = "myriad_dashboards.zip";
+    link.click();
+}
+
+async function importFromZip(file) {
+    if (!file) return;
+    const zip = await JSZip.loadAsync(file);
+    const dashboards = getSavedDashboards();
+    
+    for (const filename in zip.files) {
+        if (filename.endsWith('.json')) {
+            const content = await zip.files[filename].async('string');
+            try {
+                const data = JSON.parse(content);
+                let name = filename.replace('.json', '');
+                if (dashboards[name]) {
+                    if (!confirm(`Dashboard "${name}" already exists. Overwrite?`)) {
+                        name = prompt(`Enter a new name for "${name}":`, `${name}-imported`);
+                        if (!name) continue;
+                    }
+                }
+                saveDashboard(name, data);
+            } catch (e) {
+                console.error(`Error parsing ${filename}:`, e);
+            }
+        }
+    }
+    alert("Import complete!");
+    closeModal('dashboardManagerModal');
+}
+
+function toggleWidgetHeaders() {
+    const mainGrid = document.querySelector('.main-grid');
+    const areHeadersHidden = mainGrid.classList.toggle('headers-hidden');
+    localStorage.setItem('dashboardHeadersHidden', areHeadersHidden);
+    
+    grid.getGridItems().forEach(el => {
+        if (el && el.widgetInstance && typeof el.widgetInstance.onResize === 'function') {
+            el.widgetInstance.onResize();
+        }
+    });
+}
+
+function enableViewOnlyMode() {
+    document.body.classList.add('view-only-mode');
+    grid.disable();
+}
+
+async function copyLayoutAsTemplate() {
+    const layout = serializeGrid(grid);
+    const connectionInfo = {
+        broker: document.getElementById('broker').value,
+        port: document.getElementById('port').value,
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        useSSL: document.getElementById('useSSL').checked,
+    };
+    const theme = document.getElementById('themeSelector').value;
+
+    const template = { layout, connection: connectionInfo, theme };
+    const jsonString = JSON.stringify(template, null, 2);
+    try {
+        await navigator.clipboard.writeText(jsonString);
+        alert("Layout template copied to clipboard!");
+    } catch(e) {
+        console.error("Failed to copy template:", e);
+        alert("Could not copy layout template.");
+    }
 }
 
 function setStatus(txt, color = 'black') {
@@ -307,7 +552,7 @@ function connect() {
     toggleConnectionBtns(false);
     if (responseObject.errorCode !== 0 && !manualDisconnect) {
         setStatus('Reconnecting...', 'orange');
-        setTimeout(() => connect(), 2000); // Reintentar después de 2 segundos
+        setTimeout(() => connect(), 2000);
     }
   };
 
@@ -387,7 +632,7 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
             <div class="widget-header">
                 <span class="widget-header-topic"></span>
                 <div>
-                    <button class="config-btn" onclick="openConfig('${id}')">⚙️</button>
+                    <button class="config-btn" data-widget-id="${id}">⚙️</button>
                     <button class="del-btn">✖</button>
                 </div>
             </div>
@@ -396,6 +641,7 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
         const node = targetGrid.addWidget({ ...gridOpts, content });
         
         node.querySelector('.del-btn').addEventListener('click', () => removeWidget(node));
+        node.querySelector('.config-btn').addEventListener('click', (e) => openConfig(e.target.dataset.widgetId));
 
         const container = node.querySelector(`#${id}`);
         const inst = new Widget(id, container, publish, targetGrid); 
@@ -422,7 +668,7 @@ function removeWidget(node) {
         node.widgetInstance.destroy?.();
     }
     grid.removeWidget(node, true);
-    saveLayout();
+    saveCurrentDashboard(currentDashboardName, false);
 }
 
 let currentConfigWidget = null;
@@ -437,8 +683,8 @@ function openConfig(id) {
     document.getElementById('configModal').style.display = 'block';
 }
 
-function closeModal() {
-  document.getElementById('configModal').style.display = 'none';
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
 }
 
 function saveConfig() {
@@ -464,8 +710,8 @@ function saveConfig() {
     const topicDisplay = Array.isArray(inst.topic) ? inst.topic.join(', ') : (inst.topic || 'No Topic');
     node.querySelector('.widget-header-topic').textContent = inst.config?.title || topicDisplay;
   }
-  closeModal();
-  saveLayout();
+  closeModal('configModal');
+  saveCurrentDashboard(currentDashboardName, false);
 }
 
 function serializeGrid(targetGrid) {
@@ -486,11 +732,6 @@ function serializeGrid(targetGrid) {
     }).filter(item => item !== null);
 }
 
-function saveLayout() {
-  const layoutData = serializeGrid(grid);
-  localStorage.setItem('dashboardLayout', JSON.stringify(layoutData, null, 2));
-}
-
 async function loadGrid(targetGrid, items) {
     if (!items) return;
     for (const item of items) {
@@ -506,22 +747,6 @@ async function loadGrid(targetGrid, items) {
     }
 }
 
-async function loadLayout() {
-  const saved = localStorage.getItem('dashboardLayout');
-  if (!saved) return;
-  if (!grid) return;
-  grid.removeAll(true);
-  const data = JSON.parse(saved);
-  await loadGrid(grid, data);
-}
-
-function clearDashboard() {
-  if (confirm('Clear the entire dashboard and delete the saved layout?')) {
-    localStorage.removeItem('dashboardLayout');
-    grid.removeAll(true);
-  }
-}
-
 function applyTheme(theme) {
   document.body.setAttribute('data-theme', theme);
   localStorage.setItem('dashboardTheme', theme);
@@ -532,7 +757,7 @@ function applyTheme(theme) {
   });
 }
 
-async function generateShareableUrl() {
+async function generateShareableUrl(isViewOnly = false) {
     const connectionInfo = {
         broker: document.getElementById('broker').value,
         port: document.getElementById('port').value,
@@ -550,39 +775,74 @@ async function generateShareableUrl() {
     };
 
     const jsonString = JSON.stringify(fullState);
-    const encodedData = encodeURIComponent(jsonString);
+    const useCompression = document.getElementById('compressUrl')?.checked;
+    
+    let dataToEncode;
+    const params = new URLSearchParams();
+
+    if (useCompression) {
+        const compressed = pako.deflate(jsonString, { level: 9 });
+        dataToEncode = btoa(String.fromCharCode.apply(null, compressed));
+        params.set('c', '1'); 
+    } else {
+        dataToEncode = encodeURIComponent(jsonString);
+    }
+    
+    params.set('data', dataToEncode);
+    if (isViewOnly) {
+        params.set('view', 'client');
+    }
 
     const url = new URL(window.location);
-    url.hash = `data=${encodedData}`;
+    url.hash = params.toString();
     
     try {
         await navigator.clipboard.writeText(url.toString());
         alert("Dashboard URL copied to clipboard.");
     } catch(e) {
         alert("Could not copy URL. Please copy it manually from the address bar.");
-        window.location.hash = url.hash;
+        window.history.pushState(null, '', url.toString());
     }
 }
 
 async function loadFromUrl() {
-    if (!window.location.hash.startsWith('#data=')) {
-        return false;
-    }
+    if (!window.location.hash) return false;
     
-    try {
-        const encodedData = window.location.hash.substring(6);
-        const jsonString = decodeURIComponent(encodedData);
-        const fullState = JSON.parse(jsonString);
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const isCompressed = params.get('c') === '1';
+    let encodedData = params.get('data');
+    const viewMode = params.get('view');
 
+    if (!encodedData) return false;
+
+    try {
+        let jsonString;
+        if (isCompressed) {
+            const binaryString = atob(encodedData);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            jsonString = pako.inflate(bytes, { to: 'string' });
+        } else {
+            jsonString = decodeURIComponent(encodedData);
+        }
+
+        const fullState = JSON.parse(jsonString);
+        
         const { connection, layout, theme } = fullState;
+
         document.getElementById('broker').value = connection.broker;
         document.getElementById('port').value = connection.port;
         document.getElementById('username').value = connection.username;
         document.getElementById('password').value = connection.password;
         document.getElementById('useSSL').checked = connection.useSSL;
-        document.getElementById('clientId').value = connection.clientId;
-        document.getElementById('randomClientId').checked = connection.randomClientId;
-        document.getElementById('clientId').disabled = connection.randomClientId;
+        
+        if (viewMode !== 'client') {
+            document.getElementById('clientId').value = connection.clientId;
+            document.getElementById('randomClientId').checked = connection.randomClientId;
+            document.getElementById('clientId').disabled = connection.randomClientId;
+        }
 
         applyTheme(theme);
         document.getElementById('themeSelector').value = theme;
@@ -591,15 +851,22 @@ async function loadFromUrl() {
             grid.removeAll(true);
             await loadGrid(grid, layout);
         }
+
+        if (viewMode === 'client') {
+            enableViewOnlyMode();
+        }
+        
+        document.getElementById('currentDashboardName').textContent = 'Loaded from URL';
+        currentDashboardName = 'Loaded from URL';
+
         return true;
     } catch (e) {
         console.error("Error loading from URL:", e);
-        alert("Could not load configuration from URL. It may be corrupt.");
+        alert("Could not load configuration from URL. It may be corrupt or the compression format is invalid.");
         return false;
     }
 }
 
-window.openConfig = openConfig;
 window.closeModal = closeModal;
 window.saveConfig = saveConfig;
 
