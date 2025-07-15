@@ -1,44 +1,78 @@
-import BaseWidget from './base.js';
-import { decode } from './utils.js';
+// libs/datalogger.js
 
-export default class LogWidget extends BaseWidget {
-  constructor(id, container, publishFn, parentGrid) {
-    super(id, container, publishFn, parentGrid);
-    this.config = { max_lines: 50 };
-    this.render();
-  }
+const DB_PREFIX = 'myriad_log_';
 
-  render() {
-    this.container.innerHTML = `<pre style="width:100%;height:100%;margin:0;overflow-y:auto;font-family:monospace;font-size:12px;white-space:pre-wrap;"></pre>`;
-    this.logArea = this.container.firstElementChild;
-  }
-
-  onMessage(payload) {
-    const val = decode(payload, this.jsonPath);
-    const timestamp = new Date().toLocaleTimeString();
-    
-    const newLogEntry = document.createElement('div');
-    newLogEntry.innerHTML = `<strong>[${timestamp}]</strong> ${typeof val === 'object' ? JSON.stringify(val) : String(val)}`;
-    
-    this.logArea.appendChild(newLogEntry);
-
-    while (this.logArea.children.length > this.config.max_lines) {
-      this.logArea.removeChild(this.logArea.firstChild);
+// Clase para gestionar el logging de un widget específico
+class WidgetLogger {
+    constructor(widgetId, limitKB = 50) {
+        this.storageKey = `${DB_PREFIX}${widgetId}`;
+        this.limitBytes = limitKB * 1024;
+        this.records = this._load();
     }
 
-    this.logArea.scrollTop = this.logArea.scrollHeight;
-  }
+    _load() {
+        try {
+            const data = localStorage.getItem(this.storageKey);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            console.error(`Error loading logs for ${this.widgetId}:`, e);
+            return [];
+        }
+    }
 
-  getConfigForm() {
-    return super.getBaseConfigForm() + `
-      <label>Maximum lines to show:</label>
-      <input id="cfg_max_lines" type="number" value="${this.config.max_lines}">`;
-  }
+    _save() {
+        try {
+            localStorage.setItem(this.storageKey, JSON.stringify(this.records));
+        } catch (e) {
+            console.error(`Error saving logs for ${this.widgetId}:`, e);
+        }
+    }
 
-  saveConfig() {
-    super.saveBaseConfig();
-    this.config.max_lines = parseInt(document.getElementById('cfg_max_lines').value, 10) || 50;
-  }
-  getOptions() { return { topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
-  setOptions(o) { super.setOptions(o); this.config = { ...this.config, ...o }; this.render(); }
+    log(data) {
+        this.records.push({ ts: Date.now(), payload: data });
+        this._enforceLimit();
+        this._save();
+    }
+
+    getLogs() {
+        return this.records;
+    }
+
+    getUsage() {
+        const usageBytes = localStorage.getItem(this.storageKey)?.length || 0;
+        return (usageBytes / 1024).toFixed(2); // Retorna uso en KB
+    }
+
+    clear() {
+        this.records = [];
+        localStorage.removeItem(this.storageKey);
+    }
+    
+    setLimit(limitKB) {
+        this.limitBytes = limitKB * 1024;
+        this._enforceLimit();
+        this._save();
+    }
+
+    _enforceLimit() {
+        let currentSize = JSON.stringify(this.records).length;
+        while (currentSize > this.limitBytes && this.records.length > 0) {
+            this.records.shift(); // Elimina el registro más antiguo
+            currentSize = JSON.stringify(this.records).length;
+        }
+    }
+}
+
+// Mapa para mantener una instancia de logger por cada widget
+const loggers = new Map();
+
+export function getDataLogger(widgetId, limitKB) {
+    if (!loggers.has(widgetId)) {
+        loggers.set(widgetId, new WidgetLogger(widgetId, limitKB));
+    }
+    const logger = loggers.get(widgetId);
+    if(limitKB) {
+      logger.setLimit(limitKB);
+    }
+    return logger;
 }
