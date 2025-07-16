@@ -20,7 +20,7 @@ export default class LineWidget extends BaseWidget {
                 label: 'Series 1',
                 color: 'var(--primary-color)'
             }],
-            xAxisType: 'category', // 'category', 'timeseries', 'linear'
+            xAxisType: 'category',
             gridColor: 'var(--border-color)',
             fontColor: 'var(--text-color)',
             backgroundColor: 'rgba(0,0,0,0)',
@@ -29,7 +29,6 @@ export default class LineWidget extends BaseWidget {
         };
         
         this.topic = [this.config.series[0].topic];
-
         this.container.style.height = '100%';
         this.canvas = document.createElement('canvas');
         this.container.appendChild(this.canvas);
@@ -66,6 +65,7 @@ export default class LineWidget extends BaseWidget {
                     ticks: { maxRotation: 0, autoSkip: true, color: resolveColor(this.config.fontColor) },
                     grid: { color: resolveColor(this.config.gridColor) }
                 };
+                // CORRECCIÓN CLAVE: No se debe definir 'labels' para ejes de tiempo.
                 break;
             case 'linear':
                 xAxisConfig = {
@@ -81,10 +81,10 @@ export default class LineWidget extends BaseWidget {
                     ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, color: resolveColor(this.config.fontColor) },
                     grid: { color: resolveColor(this.config.gridColor) }
                 };
-                chartData.labels = []; // Solo el tipo 'category' usa labels
+                // CORRECCIÓN CLAVE: 'labels' solo se define para el tipo 'category'.
+                chartData.labels = []; 
                 break;
         }
-
 
         this.chart = new Chart(this.canvas, {
             type: 'line',
@@ -129,7 +129,6 @@ export default class LineWidget extends BaseWidget {
                 const dataset = this.chart.data.datasets[index];
                 
                 if (this.config.xAxisType === 'category') {
-                    // Lógica para el eje de categorías (puntos espaciados uniformemente)
                     dataset.data.push(parseFloat(val) || 0);
                     this.chart.data.labels.push(new Date().toLocaleTimeString());
                     
@@ -138,7 +137,6 @@ export default class LineWidget extends BaseWidget {
                         dataset.data.shift();
                     }
                 } else {
-                    // Lógica para ejes 'timeseries' y 'linear'
                     let newDataPoint;
                     if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
                         newDataPoint = {
@@ -146,14 +144,13 @@ export default class LineWidget extends BaseWidget {
                             y: parseFloat(val.y) || 0
                         };
                     } else {
-                        // Si solo llega un valor, se asume que es para un 'timeseries'
                         newDataPoint = {
                             x: Date.now(),
                             y: parseFloat(val) || 0
                         };
                     }
                     
-                    if (this.config.xAxisType === 'linear' && !val.x) return; // Ignorar si es lineal y no viene {x,y}
+                    if (this.config.xAxisType === 'linear' && (typeof val !== 'object' || !('x' in val))) return;
 
                     dataset.data.push(newDataPoint);
                     
@@ -164,7 +161,6 @@ export default class LineWidget extends BaseWidget {
             }
         });
         
-        // La ordenación es crucial para que la línea se dibuje correctamente
         if (this.config.xAxisType !== 'category') {
             this.chart.data.datasets.forEach(d => {
                 d.data.sort((a, b) => a.x - b.x);
