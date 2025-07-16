@@ -230,7 +230,7 @@ function toggleDesignClientView() {
 }
 
 async function initializeApp() {
-    if (!window.GridStack || !window.pako || !window.JSZip || !window.Chart.adapters || !window.ChartZoom) { 
+    if (!window.GridStack || !window.pako || !window.JSZip || !window.Chart || !window.Chart.adapters._date || !window.Chart.registry.plugins.get('zoom')) { 
         setTimeout(initializeApp, 50);
         return;
     }
@@ -700,7 +700,6 @@ function saveConfig() {
   if (client?.isConnected()) {
     const newTopics = new Set(Array.isArray(inst.topic) ? inst.topic : [inst.topic]);
     
-    // Unsubscribe from old topics that are no longer in use by ANY widget
     oldTopics.forEach(oldTopic => {
         if (oldTopic && !newTopics.has(oldTopic)) {
             const isTopicStillUsed = grid.getGridItems().some(el => {
@@ -714,7 +713,6 @@ function saveConfig() {
         }
     });
 
-    // Subscribe to new topics
     newTopics.forEach(newTopic => {
       if (newTopic && !oldTopics.has(newTopic)) client.subscribe(newTopic);
     });
