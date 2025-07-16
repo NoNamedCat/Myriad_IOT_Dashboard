@@ -1,7 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
 
-// --- FUNCIONES AUXILIARES DE COLOR ---
 const randomColor = () => `hsl(${Math.random() * 360}, 70%, 60%)`;
 const resolveColor = (colorVar) => {
     if (colorVar.startsWith('var(')) {
@@ -10,7 +9,6 @@ const resolveColor = (colorVar) => {
     return colorVar;
 };
 
-// --- WIDGET PRINCIPAL ---
 export default class LineWidget extends BaseWidget {
     constructor(id, container, publishFn, parentGrid) {
         super(id, container, publishFn, parentGrid);
@@ -22,11 +20,12 @@ export default class LineWidget extends BaseWidget {
                 label: 'Series 1',
                 color: 'var(--primary-color)'
             }],
+            xAxisType: 'category', // Opciones: 'category', 'timeseries', 'linear'
             gridColor: 'var(--border-color)',
             fontColor: 'var(--text-color)',
             backgroundColor: 'rgba(0,0,0,0)',
             tension: 0.2,
-            maxDataPoints: 50,
+            maxDataPoints: 100,
         };
         
         this.topic = [this.config.series[0].topic];
@@ -52,10 +51,42 @@ export default class LineWidget extends BaseWidget {
             fill: false
         }));
 
+        let xAxisConfig;
+        switch(this.config.xAxisType) {
+            case 'timeseries':
+                xAxisConfig = {
+                    type: 'timeseries',
+                    time: {
+                        unit: 'second',
+                        tooltipFormat: 'HH:mm:ss',
+                        displayFormats: { second: 'HH:mm:ss', minute: 'HH:mm', hour: 'HH:mm' }
+                    },
+                    ticks: { maxRotation: 0, autoSkip: true, color: resolveColor(this.config.fontColor) },
+                    grid: { color: resolveColor(this.config.gridColor) }
+                };
+                break;
+            case 'linear':
+                xAxisConfig = {
+                    type: 'linear',
+                    ticks: { color: resolveColor(this.config.fontColor) },
+                    grid: { color: resolveColor(this.config.gridColor) }
+                };
+                break;
+            case 'category':
+            default:
+                 xAxisConfig = {
+                    type: 'category',
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, color: resolveColor(this.config.fontColor) },
+                    grid: { color: resolveColor(this.config.gridColor) }
+                };
+                break;
+        }
+
+
         this.chart = new Chart(this.canvas, {
             type: 'line',
             data: { 
-                labels: [], 
+                labels: this.config.xAxisType === 'category' ? [] : undefined,
                 datasets: datasets 
             },
             options: {
@@ -63,15 +94,7 @@ export default class LineWidget extends BaseWidget {
                 maintainAspectRatio: false,
                 animation: false,
                 scales: {
-                    x: {
-                        ticks: { 
-                            maxRotation: 0, 
-                            autoSkip: true, 
-                            maxTicksLimit: 7,
-                            color: resolveColor(this.config.fontColor),
-                        },
-                        grid: { color: resolveColor(this.config.gridColor) }
-                    },
+                    x: xAxisConfig,
                     y: {
                         ticks: { color: resolveColor(this.config.fontColor) },
                         grid: { color: resolveColor(this.config.gridColor) }
@@ -80,6 +103,15 @@ export default class LineWidget extends BaseWidget {
                 plugins: {
                     legend: {
                         labels: { color: resolveColor(this.config.fontColor) }
+                    },
+                    zoom: {
+                        pan: { enabled: true, mode: 'xy' },
+                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
+                    },
+                    decimation: {
+                        enabled: true,
+                        algorithm: 'lttb',
+                        samples: 50,
                     }
                 }
             }
@@ -94,17 +126,43 @@ export default class LineWidget extends BaseWidget {
                 const val = decode(payload, seriesConfig.jsonPath);
                 if (val === null || val === undefined) return;
 
-                const ts = new Date().toLocaleTimeString();
-                
-                this.chart.data.datasets[index].data.push(parseFloat(val) || 0);
-                this.chart.data.labels.push(ts);
+                const dataset = this.chart.data.datasets[index];
+                let newDataPoint;
 
-                if (this.chart.data.labels.length > this.config.maxDataPoints) {
-                    this.chart.data.labels.shift();
-                    this.chart.data.datasets.forEach(d => d.data.shift());
+                switch(this.config.xAxisType) {
+                    case 'timeseries':
+                        newDataPoint = (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) 
+                            ? { x: val.x, y: parseFloat(val.y) || 0 }
+                            : { x: Date.now(), y: parseFloat(val) || 0 };
+                        dataset.data.push(newDataPoint);
+                        break;
+                    case 'linear':
+                         if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
+                            newDataPoint = { x: parseFloat(val.x) || 0, y: parseFloat(val.y) || 0 };
+                            dataset.data.push(newDataPoint);
+                         }
+                        break;
+                    case 'category':
+                    default:
+                        dataset.data.push(parseFloat(val) || 0);
+                        this.chart.data.labels.push(new Date().toLocaleTimeString());
+                        if (this.chart.data.labels.length > this.config.maxDataPoints) {
+                            this.chart.data.labels.shift();
+                        }
+                        break;
+                }
+
+                if (this.config.xAxisType !== 'category' && dataset.data.length > this.config.maxDataPoints) {
+                    dataset.data.shift();
                 }
             }
         });
+        
+        if (this.config.xAxisType !== 'category') {
+            this.chart.data.datasets.forEach(d => {
+                d.data.sort((a, b) => a.x - b.x);
+            });
+        }
         
         this.chart.update('none');
     }
@@ -150,15 +208,20 @@ export default class LineWidget extends BaseWidget {
             <button type="button" id="add-series-btn">Add New Series</button>
             <hr>
             <h4>General Chart Settings</h4>
+            <label for="cfg_xAxisType">X-Axis Type:</label>
+            <select id="cfg_xAxisType">
+                <option value="category" ${this.config.xAxisType === 'category' ? 'selected' : ''}>Category (Evenly Spaced)</option>
+                <option value="timeseries" ${this.config.xAxisType === 'timeseries' ? 'selected' : ''}>Time Series (Time-based)</option>
+                <option value="linear" ${this.config.xAxisType === 'linear' ? 'selected' : ''}>Linear (X, Y pairs)</option>
+            </select>
+            <small><b>Time Series</b> usa el tiempo real. <b>Linear</b> requiere datos {x,y}.</small>
+            <hr>
             <label>Grid & Font Color:</label>
             <input type="color" id="cfg_gridColor" value="${this.config.gridColor}">
-            <label>Background Color:</label>
-            <input type="color" id="cfg_backgroundColor" value="${this.config.backgroundColor}">
-            <hr>
             <label>Line Tension:</label>
             <input type="number" id="cfg_tension" min="0" max="1" step="0.1" value="${this.config.tension}">
             <label>Max Data Points:</label>
-            <input type="number" id="cfg_maxDataPoints" min="5" max="200" step="1" value="${this.config.maxDataPoints}">
+            <input type="number" id="cfg_maxDataPoints" min="5" max="1000" step="1" value="${this.config.maxDataPoints}">
         `;
     }
     
@@ -173,11 +236,11 @@ export default class LineWidget extends BaseWidget {
     saveConfig() {
         this.oldTopic = [...this.topic];
         
-        this.config.backgroundColor = document.getElementById('cfg_backgroundColor').value;
         this.config.gridColor = document.getElementById('cfg_gridColor').value;
         this.config.fontColor = this.config.gridColor;
         this.config.tension = parseFloat(document.getElementById('cfg_tension').value);
         this.config.maxDataPoints = parseInt(document.getElementById('cfg_maxDataPoints').value, 10);
+        this.config.xAxisType = document.getElementById('cfg_xAxisType').value;
         
         this.config.series = [];
         document.querySelectorAll('.series-config-row').forEach(row => {
@@ -196,8 +259,7 @@ export default class LineWidget extends BaseWidget {
   
     getOptions() { 
         return { 
-            topic: this.topic,
-            jsonPath: this.jsonPath, 
+            ...super.getOptions(),
             ...this.config 
         }; 
     }
