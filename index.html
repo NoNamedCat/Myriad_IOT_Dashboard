@@ -194,7 +194,11 @@
 <script src="libs/paho-mqtt.min.js" defer></script>
 <script src="libs/leaflet.js" defer></script>
 <script src="libs/pako.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="libs/jszip.min.js" defer></script>
+
+<script src="libs/chartjs-adapter-date-fns.bundle.min.js" defer></script>
+<script src="libs/chartjs-plugin-zoom.min.js" defer></script>
+
 
 <script type="module">
 let client = null;
@@ -226,7 +230,7 @@ function toggleDesignClientView() {
 }
 
 async function initializeApp() {
-    if (!window.GridStack || !window.pako || !window.JSZip) { 
+    if (!window.GridStack || !window.pako || !window.JSZip || !window.Chart.adapters || !window.ChartZoom) { 
         setTimeout(initializeApp, 50);
         return;
     }
@@ -285,8 +289,6 @@ async function initializeApp() {
     document.getElementById('themeSelector').value = savedTheme;
     document.body.setAttribute('data-theme', savedTheme);
 }
-
-// ... (El resto del código JavaScript no necesita cambios y se mantiene igual)
 
 function getSavedDashboards() {
     return JSON.parse(localStorage.getItem('myriadDashboards')) || {};
@@ -561,7 +563,7 @@ function connect() {
     grid.getGridItems().forEach(el => {
         if (el && el.widgetInstance) {
             const topics = Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic];
-            if (topics.includes(msg.destinationName)) {
+            if (topics.some(t => Paho.MQTT.isSubscribed(msg.destinationName, t))) {
                 el.widgetInstance.onMessage(msg.payloadBytes, msg.destinationName);
             }
         }
@@ -691,16 +693,28 @@ function closeModal(id) {
 function saveConfig() {
   if (!currentConfigWidget) return;
   const inst = currentConfigWidget;
+  const oldTopics = new Set(Array.isArray(inst.topic) ? inst.topic : [inst.topic]);
+
   inst.saveConfig();
   
   if (client?.isConnected()) {
     const newTopics = new Set(Array.isArray(inst.topic) ? inst.topic : [inst.topic]);
-    const oldTopics = new Set(Array.isArray(inst.oldTopic) ? inst.oldTopic : [inst.oldTopic]);
+    
+    // Unsubscribe from old topics that are no longer in use by ANY widget
     oldTopics.forEach(oldTopic => {
-      if (oldTopic && !newTopics.has(oldTopic) && !grid.getGridItems().some(el => el.widgetInstance.id !== inst.id && (Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic]).includes(oldTopic))) {
-        client.unsubscribe(oldTopic);
-      }
+        if (oldTopic && !newTopics.has(oldTopic)) {
+            const isTopicStillUsed = grid.getGridItems().some(el => {
+                if (!el.widgetInstance || el.widgetInstance.id === inst.id) return false;
+                const otherTopics = Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic];
+                return otherTopics.includes(oldTopic);
+            });
+            if (!isTopicStillUsed) {
+                client.unsubscribe(oldTopic);
+            }
+        }
     });
+
+    // Subscribe to new topics
     newTopics.forEach(newTopic => {
       if (newTopic && !oldTopics.has(newTopic)) client.subscribe(newTopic);
     });
@@ -776,7 +790,7 @@ async function generateShareableUrl(isViewOnly = false) {
     };
 
     const jsonString = JSON.stringify(fullState);
-    const useCompression = document.getElementById('compressUrl')?.checked;
+    const useCompression = true; 
     
     let dataToEncode;
     const params = new URLSearchParams();
