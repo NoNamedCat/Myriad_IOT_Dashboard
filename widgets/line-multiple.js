@@ -20,7 +20,7 @@ export default class LineWidget extends BaseWidget {
                 label: 'Series 1',
                 color: 'var(--primary-color)'
             }],
-            xAxisType: 'category', // Opciones: 'category', 'timeseries', 'linear'
+            xAxisType: 'category', // 'category', 'timeseries', 'linear'
             gridColor: 'var(--border-color)',
             fontColor: 'var(--text-color)',
             backgroundColor: 'rgba(0,0,0,0)',
@@ -52,6 +52,8 @@ export default class LineWidget extends BaseWidget {
         }));
 
         let xAxisConfig;
+        const chartData = { datasets };
+
         switch(this.config.xAxisType) {
             case 'timeseries':
                 xAxisConfig = {
@@ -79,16 +81,14 @@ export default class LineWidget extends BaseWidget {
                     ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, color: resolveColor(this.config.fontColor) },
                     grid: { color: resolveColor(this.config.gridColor) }
                 };
+                chartData.labels = []; // Solo el tipo 'category' usa labels
                 break;
         }
 
 
         this.chart = new Chart(this.canvas, {
             type: 'line',
-            data: { 
-                labels: this.config.xAxisType === 'category' ? [] : undefined,
-                datasets: datasets 
-            },
+            data: chartData,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -127,37 +127,44 @@ export default class LineWidget extends BaseWidget {
                 if (val === null || val === undefined) return;
 
                 const dataset = this.chart.data.datasets[index];
-                let newDataPoint;
+                
+                if (this.config.xAxisType === 'category') {
+                    // Lógica para el eje de categorías (puntos espaciados uniformemente)
+                    dataset.data.push(parseFloat(val) || 0);
+                    this.chart.data.labels.push(new Date().toLocaleTimeString());
+                    
+                    if (this.chart.data.labels.length > this.config.maxDataPoints) {
+                        this.chart.data.labels.shift();
+                        dataset.data.shift();
+                    }
+                } else {
+                    // Lógica para ejes 'timeseries' y 'linear'
+                    let newDataPoint;
+                    if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
+                        newDataPoint = {
+                            x: this.config.xAxisType === 'timeseries' ? val.x : parseFloat(val.x) || 0,
+                            y: parseFloat(val.y) || 0
+                        };
+                    } else {
+                        // Si solo llega un valor, se asume que es para un 'timeseries'
+                        newDataPoint = {
+                            x: Date.now(),
+                            y: parseFloat(val) || 0
+                        };
+                    }
+                    
+                    if (this.config.xAxisType === 'linear' && !val.x) return; // Ignorar si es lineal y no viene {x,y}
 
-                switch(this.config.xAxisType) {
-                    case 'timeseries':
-                        newDataPoint = (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) 
-                            ? { x: val.x, y: parseFloat(val.y) || 0 }
-                            : { x: Date.now(), y: parseFloat(val) || 0 };
-                        dataset.data.push(newDataPoint);
-                        break;
-                    case 'linear':
-                         if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
-                            newDataPoint = { x: parseFloat(val.x) || 0, y: parseFloat(val.y) || 0 };
-                            dataset.data.push(newDataPoint);
-                         }
-                        break;
-                    case 'category':
-                    default:
-                        dataset.data.push(parseFloat(val) || 0);
-                        this.chart.data.labels.push(new Date().toLocaleTimeString());
-                        if (this.chart.data.labels.length > this.config.maxDataPoints) {
-                            this.chart.data.labels.shift();
-                        }
-                        break;
-                }
-
-                if (this.config.xAxisType !== 'category' && dataset.data.length > this.config.maxDataPoints) {
-                    dataset.data.shift();
+                    dataset.data.push(newDataPoint);
+                    
+                    if (dataset.data.length > this.config.maxDataPoints) {
+                        dataset.data.shift();
+                    }
                 }
             }
         });
         
+        // La ordenación es crucial para que la línea se dibuje correctamente
         if (this.config.xAxisType !== 'category') {
             this.chart.data.datasets.forEach(d => {
                 d.data.sort((a, b) => a.x - b.x);
@@ -228,8 +235,7 @@ export default class LineWidget extends BaseWidget {
     onConfigFormRendered() {
         document.getElementById('add-series-btn').onclick = () => {
             const container = document.getElementById('series-config-container');
-            const newIndex = container.children.length;
-            container.insertAdjacentHTML('beforeend', this._createSeriesConfigRow({}, newIndex));
+            container.insertAdjacentHTML('beforeend', this._createSeriesConfigRow({}, container.children.length));
         };
     }
 
