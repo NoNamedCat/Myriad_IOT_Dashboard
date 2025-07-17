@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class InputWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -13,15 +14,28 @@ export default class InputWidget extends BaseWidget {
     this.inp = this.container.firstElementChild;
     this.inp.addEventListener('keydown', e => {
       if (e.key === 'Enter' && this.inp.value.trim()) {
-        this.publish(this.topic, this.inp.value.trim());
+        const payload = this.inp.value.trim();
+        this.publish(this.topic, payload);
+        if (this.config.loggingEnabled && this.logger) {
+            this.logger.log(payload);
+        }
         this.inp.value = '';
       }
     });
   }
 
   onMessage(payload) {
+    super.onMessage(payload); // <-- AÑADIDO
     const val = decode(payload, this.jsonPath);
     if (val != null) this.inp.value = val;
+  }
+
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+        this.inp.value = logs[logs.length - 1].payload;
+    }
   }
 
   getConfigForm() {
@@ -36,6 +50,14 @@ export default class InputWidget extends BaseWidget {
     this.render();
   }
 
-  getOptions() { return { topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
-  setOptions(o) { super.setOptions(o); this.config = { ...this.config, ...o }; this.render(); }
+  getOptions() { 
+      return { ...super.getOptions(), topic: this.topic, jsonPath: this.jsonPath, ...this.config }; 
+  }
+  
+  setOptions(o) { 
+      super.setOptions(o); 
+      this.config = { ...this.config, ...o }; 
+      this.render(); 
+      this.loadFromLogger();
+  }
 }

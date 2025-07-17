@@ -63,7 +63,7 @@
   .modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.5)}
   .modal-content{ background: var(--widget-bg-color); border: 1px solid var(--border-color); padding:20px; width:450px; border-radius:5px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); max-height: 85vh; display: flex; flex-direction: column; }
   .modal-content h3{margin-top:0}
-  .modal-content #configForm, #dashboardManagerList { overflow-y: auto; flex-grow: 1; padding-right: 10px; }
+  .modal-content #configForm, #dashboardManagerList, #logViewerContent { overflow-y: auto; flex-grow: 1; padding-right: 10px; }
   .modal-content .modal-footer { flex-shrink: 0; padding-top: 15px; border-top: 1px solid var(--border-color); margin-top: 10px; }
   .modal-content label{display:block;margin-bottom:6px;font-size:13px}
   .modal-content input, .modal-content textarea{ width:calc(100% - 12px); margin-bottom:10px; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 5px; }
@@ -76,6 +76,7 @@
   #dashboardManagerList li .name { flex-grow: 1; }
   #dashboardManagerList li .actions button { font-size: 11px; padding: 3px 6px; margin-left: 5px; }
 
+  #logViewerContent { background-color: var(--bg-color); font-family: monospace; font-size: 12px; white-space: pre; }
   .leaflet-control-attribution { font-size: 9px !important; }
 </style>
 </head>
@@ -189,6 +190,17 @@
   </div>
 </div>
 
+<div id="logViewerModal" class="modal">
+  <div class="modal-content" style="width: 60vw; max-width: 800px;">
+    <h3>Log Viewer</h3>
+    <div id="logViewerContent"></div>
+    <div class="modal-footer">
+      <button class="modal-cancel-btn">Close</button>
+    </div>
+  </div>
+</div>
+
+
 <script src="libs/gridstack-all.js" defer></script>
 <script src="libs/chart.umd.min.js" defer></script>
 <script src="libs/paho-mqtt.min.js" defer></script>
@@ -196,7 +208,9 @@
 <script src="libs/pako.min.js" defer></script>
 <script src="libs/jszip.min.js" defer></script>
 <script src="libs/chartjs-adapter-date-fns.bundle.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/locale/es/index.js" defer></script>
 <script src="libs/chartjs-plugin-zoom.min.js" defer></script>
+
 
 <script type="module">
 let client = null;
@@ -204,6 +218,8 @@ const widgetMap = {};
 let grid = null;
 let manualDisconnect = false;
 let currentDashboardName = 'Default';
+
+import { getDataLogger } from './libs/datalogger.js';
 
 function handleKeydown(e) {
     if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
@@ -220,12 +236,23 @@ function toggleDesignClientView() {
     } else {
         grid.enable();
     }
+    invalidateAllMaps();
+}
+
+// --- INICIO DE LA CORRECCIÓN PARA MAPAS (FUNCIÓN CENTRALIZADA) ---
+function invalidateAllMaps() {
     grid.getGridItems().forEach(el => {
-        if (el && el.widgetInstance && typeof el.widgetInstance.onResize === 'function') {
-            el.widgetInstance.onResize();
+        const widgetInstance = el.widgetInstance;
+        if (widgetInstance && typeof widgetInstance.onResize === 'function') {
+            // Un pequeño retardo asegura que el navegador haya finalizado el redibujado del layout
+            setTimeout(() => {
+                widgetInstance.onResize();
+            }, 150);
         }
     });
 }
+// --- FIN DE LA CORRECCIÓN ---
+
 
 async function initializeApp() {
     if (!window.GridStack || !window.pako || !window.JSZip || !window.Paho || !window.Chart) { 
@@ -242,6 +269,14 @@ async function initializeApp() {
         draggable: { handle: '.widget-header' }
     }, '.main-grid');
 
+    // ----- INICIO DE LA CORRECCIÓN PARA MAPAS (ESCUCHADOR DE EVENTOS) -----
+    // El evento 'change' se dispara después de añadir, eliminar, mover o redimensionar widgets.
+    // Es la forma más fiable de capturar cualquier cambio en el layout que pueda afectar el tamaño de un mapa.
+    grid.on('change', () => {
+        invalidateAllMaps();
+    });
+    // ----- FIN DE LA CORRECCIÓN -----
+
     await discoverWidgets();
     const loadedFromUrl = await loadFromUrl();
     if (!loadedFromUrl) {
@@ -256,7 +291,13 @@ async function initializeApp() {
     
     document.addEventListener('keydown', handleKeydown);
     
-    document.getElementById('sidebar-toggle').onclick = () => document.body.classList.toggle('sidebar-collapsed');
+    // ----- INICIO DE LA CORRECCIÓN PARA MAPAS (BARRA LATERAL) -----
+    document.getElementById('sidebar-toggle').onclick = () => {
+        document.body.classList.toggle('sidebar-collapsed');
+        invalidateAllMaps();
+    };
+    // ----- FIN DE LA CORRECCIÓN -----
+    
     document.getElementById('addBtn').onclick = () => addWidget(document.getElementById('widgetSelect').value, grid); 
     document.getElementById('connectBtn').onclick = connect;
     document.getElementById('disconnectBtn').onclick = disconnect;
@@ -277,15 +318,7 @@ async function initializeApp() {
     document.querySelector('#configModal .modal-cancel-btn').onclick = () => closeModal('configModal');
     document.querySelector('#configModal .modal-save-btn').onclick = saveConfig;
     document.querySelector('#dashboardManagerModal .modal-cancel-btn').onclick = () => closeModal('dashboardManagerModal');
-
-    grid.on('change', () => saveCurrentDashboard(currentDashboardName, false));
-    grid.on('resizestop', (event, el) => {
-        if (el.widgetInstance && el.widgetInstance.onResize) el.widgetInstance.onResize();
-    });
-
-    const savedTheme = localStorage.getItem('dashboardTheme') || 'light';
-    document.getElementById('themeSelector').value = savedTheme;
-    document.body.setAttribute('data-theme', savedTheme);
+    document.querySelector('#logViewerModal .modal-cancel-btn').onclick = () => closeModal('logViewerModal');
 }
 
 function getSavedDashboards() {
@@ -318,8 +351,13 @@ async function loadDashboard(name) {
         saveDashboard('Default', data);
     }
 
-    grid.removeAll(true);
+    grid.batchUpdate(); 
+    grid.removeAll(false); 
+
     await loadGrid(grid, data.layout);
+    
+    grid.commit();
+    invalidateAllMaps(); // Invalida los mapas después de cargar un dashboard completo
     
     const { connection, theme } = data;
     if(connection) {
@@ -337,6 +375,13 @@ async function loadDashboard(name) {
     document.getElementById('currentDashboardName').textContent = name;
     currentDashboardName = name;
     localStorage.setItem('lastLoadedDashboard', name);
+
+    // Guardar automáticamente en cualquier cambio, incluido el de los mapas
+    grid.off('change'); 
+    grid.on('change', () => {
+        saveCurrentDashboard(currentDashboardName, false);
+        invalidateAllMaps(); // Asegurarse de que los mapas se actualicen
+    });
 }
 
 function saveCurrentDashboard(name = currentDashboardName, promptForName = true) {
@@ -485,12 +530,7 @@ function toggleWidgetHeaders() {
     const mainGrid = document.querySelector('.main-grid');
     const areHeadersHidden = mainGrid.classList.toggle('headers-hidden');
     localStorage.setItem('dashboardHeadersHidden', areHeadersHidden);
-    
-    grid.getGridItems().forEach(el => {
-        if (el && el.widgetInstance && typeof el.widgetInstance.onResize === 'function') {
-            el.widgetInstance.onResize();
-        }
-    });
+    invalidateAllMaps();
 }
 
 function enableViewOnlyMode() {
@@ -557,29 +597,27 @@ function connect() {
     }
   };
 
-  const isMqttTopicMatch = (topic, wildcard) => {
-      if (topic === wildcard) {
-          return true;
-      }
-      const topicLevels = topic.split('/');
+  const isMqttTopicMatch = (wildcard, topic) => {
       const wildcardLevels = wildcard.split('/');
-      const len = wildcardLevels.length;
-      for (let i = 0; i < len; i++) {
+      const topicLevels = topic.split('/');
+      const minLength = Math.min(wildcardLevels.length, topicLevels.length);
+
+      for (let i = 0; i < minLength; i++) {
           if (wildcardLevels[i] === '#') {
-              return i === len - 1;
+              return true;
           }
           if (wildcardLevels[i] !== '+' && wildcardLevels[i] !== topicLevels[i]) {
               return false;
           }
       }
-      return topicLevels.length === len;
+      return wildcardLevels.length === topicLevels.length;
   };
 
   client.onMessageArrived = msg => {
     grid.getGridItems().forEach(el => {
         if (el && el.widgetInstance) {
             const topics = Array.isArray(el.widgetInstance.topic) ? el.widgetInstance.topic : [el.widgetInstance.topic];
-            if (topics.some(t => isMqttTopicMatch(msg.destinationName, t))) {
+            if (topics.some(t => isMqttTopicMatch(t, msg.destinationName))) {
                 el.widgetInstance.onMessage(msg.payloadBytes, msg.destinationName);
             }
         }
@@ -636,7 +674,7 @@ async function discoverWidgets() {
   }
 }
 
-async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
+async function addWidget(type, targetGrid, opts = {}, gridOpts = {}, existingId = null) {
     if (!grid) {
         alert("Grid is not ready. Please try again in a moment.");
         return;
@@ -644,9 +682,11 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
     if (!type || !widgetMap[type]) return alert(`Widget type "${type}" does not exist.`);
 
     try {
-        const mod = await import(widgetMap[type]);
+        const mod = await import(`${widgetMap[type]}?v=${Date.now()}`);
         const Widget = mod.default;
-        const id = 'w' + Date.now();
+        
+        const id = existingId || 'w' + Date.now();
+        
         const content = `
             <div class="widget-header">
                 <span class="widget-header-topic"></span>
@@ -682,6 +722,44 @@ async function addWidget(type, targetGrid, opts = {}, gridOpts = {}) {
     }
 }
 
+function serializeGrid(targetGrid) {
+    if (!targetGrid) return [];
+    const gridItems = targetGrid.getGridItems();
+    return gridItems.map(el => {
+        const node = el.gridstackNode;
+        const inst = el.widgetInstance;
+        if (!node || !inst) return null;
+
+        let children = inst.nestedGrid ? serializeGrid(inst.nestedGrid) : [];
+        const options = inst.getOptions?.() || {};
+
+        return { 
+            x: node.x, y: node.y, w: node.w, h: node.h, 
+            id: inst.id,
+            type: el.widgetType, 
+            options: options,
+            children 
+        };
+    }).filter(item => item !== null);
+}
+
+async function loadGrid(targetGrid, items) {
+    if (!items) return;
+    for (const item of items) {
+        const gridOpts = { x: item.x, y: item.y, w: item.w, h: item.h };
+        await addWidget(item.type, targetGrid, item.options, gridOpts, item.id);
+        
+        if (item.children && item.children.length > 0) {
+            const parentEl = grid.getGridItems().find(el => el.widgetInstance && el.widgetInstance.id === item.id);
+            if (parentEl && parentEl.widgetInstance.nestedGrid) {
+                parentEl.widgetInstance.nestedGrid.removeAll(false);
+                await loadGrid(parentEl.widgetInstance.nestedGrid, item.children);
+            }
+        }
+    }
+}
+
+
 function removeWidget(node) {
     if (node && node.widgetInstance) {
         node.widgetInstance.destroy?.();
@@ -692,12 +770,32 @@ function removeWidget(node) {
 
 let currentConfigWidget = null;
 
+function openLogViewer(widgetId) {
+    const logger = getDataLogger(widgetId);
+    if (!logger) {
+        alert("Logging is not enabled for this widget.");
+        return;
+    }
+    const logs = logger.getLogs();
+    const contentEl = document.getElementById('logViewerContent');
+    if (logs.length === 0) {
+        contentEl.textContent = "No log data available.";
+    } else {
+        contentEl.textContent = logs.map(log => `[${new Date(log.ts).toLocaleString()}] ${log.payload}`).join('\n');
+    }
+    document.getElementById('logViewerModal').style.display = 'block';
+}
+window.openLogViewer = openLogViewer;
+
+
 function openConfig(id) {
     const node = grid.getGridItems().find(el => el.querySelector(`#${id}`));
     if (!node || !node.widgetInstance) return;
     
     currentConfigWidget = node.widgetInstance;
-    document.getElementById('configForm').innerHTML = currentConfigWidget.getConfigForm() || 'No configuration options.';
+    const formContainer = document.getElementById('configForm');
+    formContainer.innerHTML = currentConfigWidget.getConfigForm() || 'No configuration options.';
+
     currentConfigWidget.onConfigFormRendered?.();
     document.getElementById('configModal').style.display = 'block';
 }
@@ -741,39 +839,6 @@ function saveConfig() {
   }
   closeModal('configModal');
   saveCurrentDashboard(currentDashboardName, false);
-}
-
-function serializeGrid(targetGrid) {
-    if (!targetGrid) return [];
-    const gridItems = targetGrid.getGridItems();
-    return gridItems.map(el => {
-        const node = el.gridstackNode;
-        const inst = el.widgetInstance;
-        if (!node || !inst) return null;
-
-        let children = inst.nestedGrid ? serializeGrid(inst.nestedGrid) : [];
-        return { 
-            x: node.x, y: node.y, w: node.w, h: node.h, 
-            type: el.widgetType, 
-            options: inst.getOptions?.() || {}, 
-            children 
-        };
-    }).filter(item => item !== null);
-}
-
-async function loadGrid(targetGrid, items) {
-    if (!items) return;
-    for (const item of items) {
-        const gridOpts = { x: item.x, y: item.y, w: item.w, h: item.h };
-        await addWidget(item.type, targetGrid, item.options, gridOpts);
-        if (item.children && item.children.length > 0) {
-            const parentEl = grid.getGridItems().find(el => el.gridstackNode.x === item.x && el.gridstackNode.y === item.y);
-            if (parentEl && parentEl.widgetInstance.nestedGrid) {
-                parentEl.widgetInstance.nestedGrid.removeAll(false);
-                await loadGrid(parentEl.widgetInstance.nestedGrid, item.children);
-            }
-        }
-    }
 }
 
 function applyTheme(theme) {

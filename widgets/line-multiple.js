@@ -1,38 +1,50 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
+// --- FUNCIONES AUXILIARES ---
 const randomColor = () => `hsl(${Math.random() * 360}, 70%, 60%)`;
 const resolveColor = (colorVar) => {
-    if (colorVar.startsWith('var(')) {
-        return getComputedStyle(document.documentElement).getPropertyValue(colorVar.slice(4, -1)).trim();
+    if (!colorVar) return '#000000';
+    try {
+        // Asegura que el DOM está listo antes de intentar acceder a los estilos computados
+        if (document.readyState !== 'complete') return colorVar; 
+        return colorVar.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(colorVar.slice(4, -1)).trim() : colorVar;
+    } catch (e) {
+        console.error("Error resolving color:", colorVar, e);
+        return '#000000'; // Devuelve un color por defecto en caso de error
     }
-    return colorVar;
 };
 
+// --- WIDGET DE GRÁFICA DE LÍNEA (VERSIÓN CORREGIDA) ---
 export default class LineWidget extends BaseWidget {
     constructor(id, container, publishFn, parentGrid) {
         super(id, container, publishFn, parentGrid);
         
+        // La configuración por defecto se hereda de BaseWidget
         this.config = {
-            series: [{
-                topic: this.topic,
-                jsonPath: '',
-                label: 'Series 1',
-                color: 'var(--primary-color)'
-            }],
-            xAxisType: 'category',
-            gridColor: 'var(--border-color)',
-            fontColor: 'var(--text-color)',
-            backgroundColor: 'rgba(0,0,0,0)',
+            ...this.config,
+            series: [{ topic: 'no/topic/defined', jsonPath: '', label: 'Series 1', color: 'var(--primary-color)' }],
+            xAxisType: 'time',
             tension: 0.2,
             maxDataPoints: 100,
+            title: ''
         };
         
-        this.topic = [this.config.series[0].topic];
+        // Prepara el canvas, pero NO crea el gráfico todavía
         this.container.style.height = '100%';
         this.canvas = document.createElement('canvas');
         this.container.appendChild(this.canvas);
+        this.chart = null; // El gráfico se inicializará en setOptions
+    }
+
+    // `setOptions` es llamado por el dashboard después del constructor con la config guardada
+    setOptions(o) { 
+        super.setOptions(o); // Esto es crucial: configura el logger si está habilitado
+        this.config = { ...this.config, ...o };
+        this.topic = [...new Set(this.config.series.map(s => s.topic).filter(Boolean))];
         
+        // Ahora que la configuración está completa (incluido el logger), creamos el gráfico
         this.createChart();
     }
 
@@ -40,191 +52,180 @@ export default class LineWidget extends BaseWidget {
         if (this.chart) {
             this.chart.destroy();
         }
-        
+
         const datasets = this.config.series.map(s => ({
             label: s.label,
-            data: [],
+            data: [], // Los datos se cargarán desde el logger
             borderColor: resolveColor(s.color),
-            backgroundColor: 'transparent',
             tension: this.config.tension,
-            fill: false
+            fill: false,
+            parsing: false 
         }));
 
-        let xAxisConfig;
-        const chartData = { datasets };
+        const isCategory = this.config.xAxisType === 'category';
+        
+        let xAxisConfig = {
+            type: this.config.xAxisType, 
+            ticks: { color: resolveColor('var(--text-color)'), maxRotation: 0, autoSkip: true, source: 'auto' },
+            grid: { color: resolveColor('var(--border-color)') }
+        };
 
-        switch(this.config.xAxisType) {
-            case 'timeseries':
-                xAxisConfig = {
-                    type: 'timeseries',
-                    time: {
-                        unit: 'second',
-                        tooltipFormat: 'HH:mm:ss',
-                        displayFormats: { second: 'HH:mm:ss', minute: 'HH:mm', hour: 'HH:mm' }
-                    },
-                    ticks: { maxRotation: 0, autoSkip: true, color: resolveColor(this.config.fontColor) },
-                    grid: { color: resolveColor(this.config.gridColor) }
-                };
-                // CORRECCIÓN CLAVE: No se debe definir 'labels' para ejes de tiempo.
-                break;
-            case 'linear':
-                xAxisConfig = {
-                    type: 'linear',
-                    ticks: { color: resolveColor(this.config.fontColor) },
-                    grid: { color: resolveColor(this.config.gridColor) }
-                };
-                break;
-            case 'category':
-            default:
-                 xAxisConfig = {
-                    type: 'category',
-                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, color: resolveColor(this.config.fontColor) },
-                    grid: { color: resolveColor(this.config.gridColor) }
-                };
-                // CORRECCIÓN CLAVE: 'labels' solo se define para el tipo 'category'.
-                chartData.labels = []; 
-                break;
+        if (this.config.xAxisType === 'time') {
+            if (window.dateFns && window.dateFns.locale && window.dateFns.locale.es) {
+                 xAxisConfig.adapters = { date: { locale: window.dateFns.locale.es } };
+            }
+            xAxisConfig.time = {
+                unit: 'second',
+                tooltipFormat: 'HH:mm:ss',
+                displayFormats: { second: 'HH:mm:ss' }
+            };
         }
 
         this.chart = new Chart(this.canvas, {
             type: 'line',
-            data: chartData,
+            data: {
+                labels: isCategory ? [] : undefined,
+                datasets: datasets
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: false,
-                scales: {
-                    x: xAxisConfig,
-                    y: {
-                        ticks: { color: resolveColor(this.config.fontColor) },
-                        grid: { color: resolveColor(this.config.gridColor) }
+                scales: { 
+                    x: xAxisConfig, 
+                    y: { 
+                        ticks: { color: resolveColor('var(--text-color)') }, 
+                        grid: { color: resolveColor('var(--border-color)') }
                     }
                 },
                 plugins: {
-                    legend: {
-                        labels: { color: resolveColor(this.config.fontColor) }
-                    },
-                    zoom: {
-                        pan: { enabled: true, mode: 'xy' },
-                        zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy' }
-                    },
-                    decimation: {
-                        enabled: true,
-                        algorithm: 'lttb',
-                        samples: 50,
-                    }
+                    title: { display: !!this.config.title, text: this.config.title, color: resolveColor('var(--text-color)') },
+                    legend: { labels: { color: resolveColor('var(--text-color)') }},
+                    zoom: { pan: { enabled: true, mode: 'x' }, zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }},
+                    decimation: { enabled: true, algorithm: 'lttb', samples: 50 }
                 }
             }
         });
+        
+        // Carga los datos históricos AHORA, con todo ya configurado
+        this.loadFromLogger();
+    }
+
+    loadFromLogger() {
+        if (!this.config.loggingEnabled || !this.logger) {
+            return;
+        }
+
+        const logs = this.logger.getLogs();
+        if (!logs || logs.length === 0) {
+            return;
+        }
+        
+        const isCategory = this.config.xAxisType === 'category';
+        const dataset = this.chart.data.datasets[0]; 
+        
+        if (!dataset) return;
+        
+        logs.forEach(log => {
+            const val = log.payload;
+            if (val === null || val === undefined) return;
+
+            if (isCategory) {
+                dataset.data.push(parseFloat(val) || 0);
+                this.chart.data.labels.push(new Date(log.ts).toLocaleTimeString());
+            } else {
+                const newDataPoint = { x: log.ts, y: parseFloat(val) };
+                 if (!isNaN(newDataPoint.x) && !isNaN(newDataPoint.y)) {
+                    dataset.data.push(newDataPoint);
+                }
+            }
+        });
+
+        this.enforceDataLimit();
+        this.chart.update('none');
+    }
+
+    enforceDataLimit() {
+        if (this.config.xAxisType === 'category') {
+            const labels = this.chart.data.labels;
+            while (labels.length > this.config.maxDataPoints) {
+                labels.shift();
+                this.chart.data.datasets.forEach(d => d.data.shift());
+            }
+        } else {
+             this.chart.data.datasets.forEach(d => {
+                if(d.data.length > 0) {
+                    d.data.sort((a, b) => a.x - b.x);
+                    while (d.data.length > this.config.maxDataPoints) {
+                        d.data.shift();
+                    }
+                }
+            });
+        }
     }
   
     onMessage(payload, topic) {
+        super.onMessage(payload, topic);
         if (!this.chart) return;
+        const isCategory = this.config.xAxisType === 'category';
 
         this.config.series.forEach((seriesConfig, index) => {
             if (seriesConfig.topic === topic) {
                 const val = decode(payload, seriesConfig.jsonPath);
                 if (val === null || val === undefined) return;
-
                 const dataset = this.chart.data.datasets[index];
                 
-                if (this.config.xAxisType === 'category') {
+                if (isCategory) {
                     dataset.data.push(parseFloat(val) || 0);
                     this.chart.data.labels.push(new Date().toLocaleTimeString());
-                    
-                    if (this.chart.data.labels.length > this.config.maxDataPoints) {
-                        this.chart.data.labels.shift();
-                        dataset.data.shift();
-                    }
                 } else {
-                    let newDataPoint;
-                    if (typeof val === 'object' && val !== null && 'x' in val && 'y' in val) {
-                        newDataPoint = {
-                            x: this.config.xAxisType === 'timeseries' ? val.x : parseFloat(val.x) || 0,
-                            y: parseFloat(val.y) || 0
-                        };
-                    } else {
-                        newDataPoint = {
-                            x: Date.now(),
-                            y: parseFloat(val) || 0
-                        };
-                    }
-                    
-                    if (this.config.xAxisType === 'linear' && (typeof val !== 'object' || !('x' in val))) return;
-
-                    dataset.data.push(newDataPoint);
-                    
-                    if (dataset.data.length > this.config.maxDataPoints) {
-                        dataset.data.shift();
+                    const newDataPoint = (typeof val === 'object' && val !== null && 'x' in val && 'y' in val)
+                        ? { x: parseFloat(val.x), y: parseFloat(val.y) }
+                        : { x: Date.now(), y: parseFloat(val) };
+                    if (!isNaN(newDataPoint.x) && !isNaN(newDataPoint.y)) {
+                        dataset.data.push(newDataPoint);
                     }
                 }
             }
         });
-        
-        if (this.config.xAxisType !== 'category') {
-            this.chart.data.datasets.forEach(d => {
-                d.data.sort((a, b) => a.x - b.x);
-            });
-        }
-        
+        this.enforceDataLimit();
         this.chart.update('none');
     }
 
-    onThemeChanged() {
-        this.createChart();
+    onThemeChanged() { 
+        if (this.chart) this.createChart(); 
     }
   
     destroy() { 
-        if(this.chart) this.chart.destroy(); 
+        if (this.chart) this.chart.destroy(); 
     }
 
     _createSeriesConfigRow(series = {}, index) {
-        const s = {
-            topic: series.topic || '',
-            jsonPath: series.jsonPath || '',
-            label: series.label || `Series ${index + 1}`,
-            color: series.color || randomColor(),
-        };
-        
-        return `
-            <div class="series-config-row" style="border:1px solid var(--border-color); padding: 8px; margin-bottom: 10px; border-radius: 4px;">
-                <label>Topic:</label>
-                <input type="text" class="cfg-series-topic" value="${s.topic}">
-                <label>JSON Path:</label>
-                <input type="text" class="cfg-series-jsonPath" value="${s.jsonPath}" placeholder="(opcional)">
-                <label>Label:</label>
-                <input type="text" class="cfg-series-label" value="${s.label}">
-                <label>Line Color:</label>
-                <input type="color" class="cfg-series-color" value="${s.color}">
-                <button type="button" onclick="this.parentElement.remove()" style="float: right; background-color: var(--danger-color); color: white;">Remove</button>
-            </div>
-        `;
+        const s = { topic: series.topic || '', jsonPath: series.jsonPath || '', label: series.label || `Series ${index + 1}`, color: series.color || randomColor() };
+        return `<div class="series-config-row" style="border:1px solid var(--border-color); padding: 8px; margin-bottom: 10px; border-radius: 4px;"><label>Topic:</label><input type="text" class="cfg-series-topic" value="${s.topic}"><label>JSON Path:</label><input type="text" class="cfg-series-jsonPath" value="${s.jsonPath}" placeholder="(opcional)"><label>Label:</label><input type="text" class="cfg-series-label" value="${s.label}"><label>Line Color:</label><input type="color" class="cfg-series-color" value="${s.color}"><button type="button" onclick="this.parentElement.remove()" style="float: right; background-color: var(--danger-color); color: white;">Remove</button></div>`;
     }
 
     getConfigForm() {
         let seriesHtml = this.config.series.map((s, i) => this._createSeriesConfigRow(s, i)).join('');
-        
-        return `
-            <div id="series-config-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px; padding: 5px; border: 1px dashed var(--border-color);">
-                ${seriesHtml}
-            </div>
+        return super.getBaseConfigForm() + `
+            <label>Title:</label>
+            <input id="cfg_title" type="text" value="${this.config.title || ''}">
+            <hr>
+            <h4>Series Configuration</h4>
+            <div id="series-config-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 10px; padding: 5px; border: 1px dashed var(--border-color);">${seriesHtml}</div>
             <button type="button" id="add-series-btn">Add New Series</button>
             <hr>
             <h4>General Chart Settings</h4>
             <label for="cfg_xAxisType">X-Axis Type:</label>
             <select id="cfg_xAxisType">
                 <option value="category" ${this.config.xAxisType === 'category' ? 'selected' : ''}>Category (Evenly Spaced)</option>
-                <option value="timeseries" ${this.config.xAxisType === 'timeseries' ? 'selected' : ''}>Time Series (Time-based)</option>
                 <option value="linear" ${this.config.xAxisType === 'linear' ? 'selected' : ''}>Linear (X, Y pairs)</option>
+                <option value="time" ${this.config.xAxisType === 'time' ? 'selected' : ''}>Time (Time-based)</option>
+                <option value="logarithmic" ${this.config.xAxisType === 'logarithmic' ? 'selected' : ''}>Logarithmic</option>
             </select>
-            <small><b>Time Series</b> usa el tiempo real. <b>Linear</b> requiere datos {x,y}.</small>
             <hr>
-            <label>Grid & Font Color:</label>
-            <input type="color" id="cfg_gridColor" value="${this.config.gridColor}">
-            <label>Line Tension:</label>
-            <input type="number" id="cfg_tension" min="0" max="1" step="0.1" value="${this.config.tension}">
-            <label>Max Data Points:</label>
-            <input type="number" id="cfg_maxDataPoints" min="5" max="1000" step="1" value="${this.config.maxDataPoints}">
+            <label>Line Tension:</label><input type="number" id="cfg_tension" min="0" max="1" step="0.1" value="${this.config.tension}">
+            <label>Max Data Points:</label><input type="number" id="cfg_maxDataPoints" min="5" max="1000" step="1" value="${this.config.maxDataPoints}">
         `;
     }
     
@@ -233,42 +234,31 @@ export default class LineWidget extends BaseWidget {
             const container = document.getElementById('series-config-container');
             container.insertAdjacentHTML('beforeend', this._createSeriesConfigRow({}, container.children.length));
         };
+        super.onConfigFormRendered();
     }
 
     saveConfig() {
-        this.oldTopic = [...this.topic];
-        
-        this.config.gridColor = document.getElementById('cfg_gridColor').value;
-        this.config.fontColor = this.config.gridColor;
+        super.saveBaseConfig();
+        this.config.title = document.getElementById('cfg_title').value;
         this.config.tension = parseFloat(document.getElementById('cfg_tension').value);
         this.config.maxDataPoints = parseInt(document.getElementById('cfg_maxDataPoints').value, 10);
         this.config.xAxisType = document.getElementById('cfg_xAxisType').value;
-        
-        this.config.series = [];
+        this.oldTopic = [...this.topic];
+        const newSeries = [];
         document.querySelectorAll('.series-config-row').forEach(row => {
-            this.config.series.push({
+            newSeries.push({
                 topic: row.querySelector('.cfg-series-topic').value.trim(),
                 jsonPath: row.querySelector('.cfg-series-jsonPath').value.trim(),
                 label: row.querySelector('.cfg-series-label').value,
                 color: row.querySelector('.cfg-series-color').value,
             });
         });
-        
-        this.topic = [...new Set(this.config.series.map(s => s.topic).filter(t => t))];
-        
+        this.config.series = newSeries;
+        this.topic = [...new Set(this.config.series.map(s => s.topic).filter(Boolean))];
         this.createChart();
     }
   
     getOptions() { 
-        return { 
-            ...super.getOptions(),
-            ...this.config 
-        }; 
-    }
-  
-    setOptions(o) { 
-        this.config = { ...this.config, ...o };
-        this.topic = [...new Set(this.config.series.map(s => s.topic).filter(t => t))];
-        this.createChart();
+        return { ...this.config }; 
     }
 }

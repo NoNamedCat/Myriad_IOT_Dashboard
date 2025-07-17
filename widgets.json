@@ -1,1 +1,1 @@
-["button", "color", "console", "device-map", "file", "gauge", "geolocation", "image", "input", "json", "line-multiple", "log", "select", "slider", "status", "svg", "text", "timestamp"]
+["bar-chart", "button", "color", "console", "data-table", "device-map", "file", "gauge", "geolocation", "image", "input", "json", "line-multiple", "log", "select", "slider", "status", "stepper", "svg", "switch", "text", "timestamp"]

@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class SliderWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -18,14 +19,33 @@ export default class SliderWidget extends BaseWidget {
     this.range = this.container.querySelector(`#${this.id}_range`);
     
     this.range.addEventListener('input', () => this.span.textContent = this.range.value);
-    this.range.addEventListener('change', () => this.publish(this.topic, this.range.value));
+    this.range.addEventListener('change', () => {
+        this.publish(this.topic, this.range.value);
+        if (this.config.loggingEnabled && this.logger) {
+            this.logger.log(this.range.value);
+        }
+    });
+  }
+
+  _updateValue(val) {
+      if (val != null) {
+        this.range.value = val;
+        this.span.textContent = val;
+      }
   }
 
   onMessage(payload) {
+    super.onMessage(payload);
     const val = decode(payload, this.jsonPath);
-    if (val != null) {
-      this.range.value = val;
-      this.span.textContent = val;
+    this._updateValue(val);
+  }
+
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+        const lastValue = logs[logs.length - 1].payload;
+        this._updateValue(lastValue);
     }
   }
 
@@ -45,6 +65,11 @@ export default class SliderWidget extends BaseWidget {
     this.render();
   }
 
-  getOptions() { return { topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
-  setOptions(o) { super.setOptions(o); this.config = { ...this.config, ...o }; this.render(); }
+  getOptions() { return { ...super.getOptions(), topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
+  setOptions(o) { 
+      super.setOptions(o); 
+      this.config = { ...this.config, ...o }; 
+      this.render();
+      this.loadFromLogger();
+  }
 }

@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class GaugeWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -15,7 +16,6 @@ export default class GaugeWidget extends BaseWidget {
   render() {
       this.container.innerHTML = `<canvas></canvas>`;
       this.canvas = this.container.firstElementChild;
-      this.createChart();
   }
   
   createChart() {
@@ -44,16 +44,31 @@ export default class GaugeWidget extends BaseWidget {
     });
   }
 
-  onMessage(payload) {
+  _updateGauge(value) {
     if (!this.chart) return;
-    const val = decode(payload, this.jsonPath);
-    const num = Math.min(Math.max(parseFloat(val) || 0, 0), 100);
+    const num = Math.min(Math.max(parseFloat(value) || 0, 0), 100);
     this.chart.data.datasets[0].data = [num, 100 - num];
     this.chart.update('none');
   }
 
+  onMessage(payload) {
+    super.onMessage(payload); // <-- AÑADIDO
+    const val = decode(payload, this.jsonPath);
+    this._updateGauge(val);
+  }
+
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+        const lastLog = logs[logs.length - 1];
+        this._updateGauge(lastLog.payload);
+    }
+  }
+
   onThemeChanged() {
       this.createChart();
+      this.loadFromLogger();
   }
 
   getConfigForm() {
@@ -71,13 +86,18 @@ export default class GaugeWidget extends BaseWidget {
     this.config.color = document.getElementById('cfg_color').value;
     this.config.bgColor = document.getElementById('cfg_bgColor').value;
     this.createChart();
+    this.loadFromLogger();
   }
 
-  getOptions() { return { topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
+  getOptions() { 
+      return { ...super.getOptions(), topic: this.topic, jsonPath: this.jsonPath, ...this.config }; 
+  }
   
   setOptions(o) { 
       super.setOptions(o); 
       this.config = { ...this.config, ...o };
+      this.createChart();
+      this.loadFromLogger();
   }
   
   destroy() { if (this.chart) this.chart.destroy(); }

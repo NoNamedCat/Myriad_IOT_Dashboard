@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class ButtonWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -26,10 +27,15 @@ export default class ButtonWidget extends BaseWidget {
   toggle() {
     this.state = !this.state;
     this.updateButtonVisuals();
-    this.publish(this.topic, this.state ? this.config.onMsg : this.config.offMsg);
+    const payload = this.state ? this.config.onMsg : this.config.offMsg;
+    this.publish(this.topic, payload);
+    if (this.config.loggingEnabled && this.logger) {
+        this.logger.log(payload);
+    }
   }
 
   onMessage(payload) {
+    super.onMessage(payload); // <-- AÑADIDO: Llama al logger base
     const val = decode(payload, this.jsonPath);
     this.state = String(val) === this.config.onMsg;
     this.updateButtonVisuals();
@@ -43,6 +49,16 @@ export default class ButtonWidget extends BaseWidget {
   
   onThemeChanged() {
       this.updateButtonVisuals();
+  }
+  
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+        const lastLog = logs[logs.length - 1];
+        this.state = String(lastLog.payload) === this.config.onMsg;
+        this.updateButtonVisuals();
+    }
   }
 
   getConfigForm() {
@@ -68,17 +84,13 @@ export default class ButtonWidget extends BaseWidget {
   }
 
   getOptions() { 
-      return { topic: this.topic, jsonPath: this.jsonPath, ...this.config };
+      return { topic: this.topic, jsonPath: this.jsonPath, ...super.getOptions(), ...this.config };
   }
 
   setOptions(o) { 
       super.setOptions(o); 
-      if (o.onText !== undefined) this.config.onText = o.onText;
-      if (o.offText !== undefined) this.config.offText = o.offText;
-      if (o.onMsg !== undefined) this.config.onMsg = o.onMsg;
-      if (o.offMsg !== undefined) this.config.offMsg = o.offMsg;
-      if (o.onColor !== undefined) this.config.onColor = o.onColor;
-      if (o.offColor !== undefined) this.config.offColor = o.offColor;
+      this.config = { ...this.config, ...o };
       this.render(); 
+      this.loadFromLogger();
   }
 }

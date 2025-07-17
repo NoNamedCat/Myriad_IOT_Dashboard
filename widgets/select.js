@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class SelectWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -23,6 +24,9 @@ export default class SelectWidget extends BaseWidget {
       const selectedValue = this.selectEl.value;
       if (selectedValue) {
         this.publish(this.topic, selectedValue);
+        if (this.config.loggingEnabled && this.logger) {
+            this.logger.log(selectedValue);
+        }
       }
     });
   }
@@ -45,10 +49,24 @@ export default class SelectWidget extends BaseWidget {
       }
   }
 
-  onMessage(payload) {
-    const val = String(decode(payload, this.jsonPath));
-    if ([...this.selectEl.options].some(o => o.value === val)) {
+  _updateValue(val) {
+      if ([...this.selectEl.options].some(o => o.value === val)) {
         this.selectEl.value = val;
+    }
+  }
+
+  onMessage(payload) {
+    super.onMessage(payload);
+    const val = String(decode(payload, this.jsonPath));
+    this._updateValue(val);
+  }
+
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+        const lastValue = logs[logs.length-1].payload;
+        this._updateValue(lastValue);
     }
   }
 
@@ -66,6 +84,11 @@ export default class SelectWidget extends BaseWidget {
     this.populateOptions();
   }
   
-  getOptions() { return { topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
-  setOptions(o) { super.setOptions(o); this.config = { ...this.config, ...o }; this.render(); }
+  getOptions() { return { ...super.getOptions(), topic: this.topic, jsonPath: this.jsonPath, ...this.config }; }
+  setOptions(o) { 
+      super.setOptions(o); 
+      this.config = { ...this.config, ...o }; 
+      this.render();
+      this.loadFromLogger();
+  }
 }

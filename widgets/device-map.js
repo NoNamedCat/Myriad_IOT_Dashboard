@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 const TILE_PROVIDERS = {
   'OpenStreetMap': {
@@ -27,15 +28,6 @@ const TILE_PROVIDERS = {
       }
    },
 };
-
-function resolveTemplate(template, variables) {
-    if (typeof template !== 'string') return template;
-    let result = template;
-    for (const key in variables) {
-        result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), variables[key]);
-    }
-    return result;
-}
 
 export default class DeviceMapWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -70,19 +62,13 @@ export default class DeviceMapWidget extends BaseWidget {
   }
 
   initMap() {
-    let lastView = {
-        center: null,
-        zoom: null
-    };
-
+    let lastView = { center: null, zoom: null };
     if (this.map) {
         lastView.center = this.map.getCenter();
         lastView.zoom = this.map.getZoom();
         this.map.remove();
     }
-    
     const coordsDisplay = this.container.querySelector(`#${this.id}_coords`);
-
     try {
       delete L.Icon.Default.prototype._getIconUrl;
       L.Icon.Default.mergeOptions({
@@ -91,39 +77,32 @@ export default class DeviceMapWidget extends BaseWidget {
         shadowUrl: 'libs/images/marker-shadow.png',
       });
     } catch (e) { console.error("Error setting up Leaflet icon paths", e); }
-
     let initialCoords = [0, 0];
     try {
         const parts = this.config.defaultLocation.split(',');
         if (parts.length === 2) initialCoords = [parseFloat(parts[0]), parseFloat(parts[1])];
     } catch(e) { console.error("Error parsing default location:", e); }
-
     const viewCenter = lastView.center || initialCoords;
     const viewZoom = lastView.zoom || this.config.zoom;
-
     this.map = L.map(`${this.id}_map`).setView(viewCenter, viewZoom);
     this.map.attributionControl.setPrefix('');
-    
     const provider = TILE_PROVIDERS[this.config.mapTheme] || TILE_PROVIDERS['OpenStreetMap'];
     L.tileLayer(provider.url, provider.options).addTo(this.map);
     if(provider.options.attribution) {
         this.map.attributionControl.addAttribution(provider.options.attribution);
     }
-    
     const updateCoords = (e) => {
         const zoom = this.map.getZoom();
         const lat = e.latlng.lat.toFixed(5);
         const lng = e.latlng.lng.toFixed(5);
         coordsDisplay.textContent = `Lat: ${lat}, Lng: ${lng} | Zoom: ${zoom}`;
     };
-
     this.map.on('mousemove', updateCoords);
     this.map.on('zoomend', (e) => {
         const center = this.map.getCenter();
         updateCoords({ latlng: center });
     });
     this.map.on('mouseout', () => { coordsDisplay.textContent = '--'; });
-    
     this.map.on('contextmenu', (e) => {
         e.originalEvent.preventDefault();
         const coordsString = `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`;
@@ -137,7 +116,6 @@ export default class DeviceMapWidget extends BaseWidget {
             }, 1000);
         }).catch(err => { console.error('Could not copy text: ', err); });
     });
-
     this._renderStaticMarkers();
   }
   
@@ -146,7 +124,6 @@ export default class DeviceMapWidget extends BaseWidget {
           this.map.removeLayer(this.staticMarkerObjects[id]);
       }
       this.staticMarkerObjects = {};
-
       (this.config.staticMarkers || []).forEach(markerData => {
           if (!markerData || !markerData.id || !('lat' in markerData) || !('lng' in markerData)) return;
           const latLng = new L.LatLng(markerData.lat, markerData.lng);
@@ -154,35 +131,50 @@ export default class DeviceMapWidget extends BaseWidget {
       });
   }
   
-  onMessage(payload, topic) {
+  _updateMarkers(data) {
     if (!this.map) return;
-    const data = decode(payload, this.jsonPath);
     const receivedMarkers = Array.isArray(data) ? data : [data];
     const receivedIds = new Set();
-
     receivedMarkers.forEach(markerData => {
         if (!markerData || typeof markerData !== 'object' || !markerData.id || !('lat' in markerData) || !('lng' in markerData)) return;
         const id = markerData.id;
         receivedIds.add(id);
         const newLatLng = new L.LatLng(markerData.lat, markerData.lng);
-
         if (this.dynamicMarkers[id]) {
             this.dynamicMarkers[id].setLatLng(newLatLng);
         } else {
             this.dynamicMarkers[id] = this._createMarker(id, newLatLng, markerData);
         }
-        
         const marker = this.dynamicMarkers[id];
         if (markerData.popup) marker.unbindPopup().bindPopup(markerData.popup);
         if (markerData.title) marker.unbindTooltip().bindTooltip(markerData.title, { permanent: true, direction: 'top', offset: [0, -10] });
     });
-
     if (this.config.autoclear) {
         for (const id in this.dynamicMarkers) {
             if (!receivedIds.has(id)) {
                 this.map.removeLayer(this.dynamicMarkers[id]);
                 delete this.dynamicMarkers[id];
             }
+        }
+    }
+  }
+
+  onMessage(payload, topic) {
+    super.onMessage(payload);
+    const data = decode(payload, this.jsonPath);
+    this._updateMarkers(data);
+  }
+
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+        const lastLog = logs[logs.length-1].payload;
+        try {
+            const parsed = JSON.parse(lastLog);
+            this._updateMarkers(parsed);
+        } catch(e) {
+            // No hacer nada si no es un JSON válido
         }
     }
   }
@@ -195,35 +187,20 @@ export default class DeviceMapWidget extends BaseWidget {
               iconUrl: iconUrl, iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32],
           });
       }
-      
       const marker = L.marker(latLng, markerOptions).addTo(this.map);
-      
       if (data.childDashboardTemplate && data.variables) {
           marker.on('click', () => {
               try {
-                  // --- INICIO: CORRECCIÓN ---
-                  // 1. Asegurarse de que la plantilla sea un objeto
-                  const templateObject = typeof data.childDashboardTemplate === 'string'
-                      ? JSON.parse(data.childDashboardTemplate)
-                      : data.childDashboardTemplate;
-
-                  // 2. Convertir el objeto a string para reemplazar las variables
-                  const templateString = resolveTemplate(JSON.stringify(templateObject), data.variables);
-                  
-                  // 3. Parsear el string final para obtener el objeto de estado completo
+                  const templateString = resolveTemplate(JSON.stringify(data.childDashboardTemplate), data.variables);
                   const finalState = JSON.parse(templateString);
-                  // --- FIN: CORRECCIÓN ---
-
                   const compressed = pako.deflate(JSON.stringify(finalState), { level: 9 });
                   const dataToEncode = btoa(String.fromCharCode.apply(null, compressed));
-                  
                   const url = new URL(window.location.origin + window.location.pathname);
                   const params = new URLSearchParams();
                   params.set('data', dataToEncode);
                   params.set('c', '1');
                   params.set('view', 'client');
                   url.hash = params.toString();
-                  
                   window.open(url.toString(), '_blank');
               } catch (e) {
                   console.error("Error generating dynamic dashboard URL", e);
@@ -231,7 +208,6 @@ export default class DeviceMapWidget extends BaseWidget {
               }
           });
       }
-      
       return marker;
   }
   
@@ -244,12 +220,8 @@ export default class DeviceMapWidget extends BaseWidget {
     for (const name in TILE_PROVIDERS) {
       themeOptions += `<option value="${name}" ${this.config.mapTheme === name ? 'selected' : ''}>${name}</option>`;
     }
-    
     let staticMarkersHtml = (this.config.staticMarkers || []).map(m => this._createStaticMarkerFormRow(m)).join('');
-
-    return `
-      <label>Subscription Topic:</label> <input id="cfg_topic" value="${this.config.baseSubscriptionTopic}">
-      <small>Use MQTT wildcards like '+' to subscribe to multiple devices.</small>
+    return super.getBaseConfigForm() + `
       <hr>
       <h4>Map Settings</h4>
       <label>Map Theme:</label> <select id="cfg_mapTheme">${themeOptions}</select>
@@ -269,7 +241,7 @@ export default class DeviceMapWidget extends BaseWidget {
   
   _createStaticMarkerFormRow(marker = {}) {
       const m = { id: '', lat: '', lng: '', popup: '', icon: '', variables: {}, childDashboardTemplate: '', ...marker };
-      const variables = (m.childDashboardTemplate.match(/\{(\w+)\}/g) || []).map(v => v.slice(1, -1));
+      const variables = (String(m.childDashboardTemplate).match(/\{(\w+)\}/g) || []).map(v => v.slice(1, -1));
       let variablesHtml = [...new Set(variables)].map(v => `
         <label style="font-weight: bold;">Value for <code>{${v}}</code>:</label>
         <input type="text" class="cfg-sm-var" data-variable="${v}" value="${m.variables[v] || ''}">
@@ -288,6 +260,7 @@ export default class DeviceMapWidget extends BaseWidget {
   }
 
   onConfigFormRendered() {
+      super.onConfigFormRendered();
       document.getElementById('add-static-marker-btn').onclick = () => {
           const container = document.getElementById('static-markers-container');
           const newRow = this._createStaticMarkerFormRow();
@@ -302,7 +275,7 @@ export default class DeviceMapWidget extends BaseWidget {
   }
 
   saveConfig() {
-    this.topic = document.getElementById('cfg_topic').value.trim();
+    super.saveBaseConfig();
     this.config.mapTheme = document.getElementById('cfg_mapTheme').value;
     this.config.zoom = parseInt(document.getElementById('cfg_zoom').value, 10) || 13;
     this.config.defaultLocation = document.getElementById('cfg_defaultLocation').value.trim();
@@ -330,10 +303,11 @@ export default class DeviceMapWidget extends BaseWidget {
     });
 
     this.initMap();
+    this.loadFromLogger();
   }
 
   getOptions() { 
-      return { topic: this.topic, jsonPath: this.jsonPath, ...this.config };
+      return { ...super.getOptions(), topic: this.topic, jsonPath: this.jsonPath, ...this.config };
   }
 
   setOptions(o) { 
@@ -343,6 +317,7 @@ export default class DeviceMapWidget extends BaseWidget {
       this.dynamicMarkers = {};
       this.staticMarkerObjects = {};
       this.initMap();
+      this.loadFromLogger();
   }
   
   destroy() {

@@ -1,12 +1,12 @@
-// widgets/console.js
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class ConsoleWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
     super(id, container, publishFn, parentGrid);
     this.config = {
-      ...this.config, // Hereda loggingEnabled y loggingLimit
+      ...this.config,
       placeholder: 'Type a command...',
       max_lines: 100,
       echoEnabled: true,
@@ -38,37 +38,54 @@ export default class ConsoleWidget extends BaseWidget {
     });
   }
 
+  // MÉTODO NUEVO para cargar el historial
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+
+    const logs = this.logger.getLogs();
+    if (!logs || logs.length === 0) return;
+    
+    logs.forEach(log => {
+        // Asumimos que los mensajes que empiezan con '>' son 'sent'
+        const type = String(log.payload).startsWith('>') ? 'sent' : 'received';
+        this.addLogEntry(log.payload, type, new Date(log.ts));
+    });
+  }
+
   sendCommand() {
     const command = this.inputBox.value.trim();
     if (command) {
+      const commandText = `> ${command}`;
       this.publish(this.publishTopic, command);
 
       if (this.config.echoEnabled || this.publishTopic !== this.topic) {
-        this.addLogEntry(`> ${command}`, 'sent');
+        this.addLogEntry(commandText, 'sent');
       }
       
+      // Guardar el comando enviado en el logger
+      if (this.config.loggingEnabled && this.logger) {
+          this.logger.log(commandText);
+      }
+
       this.inputBox.value = '';
     }
   }
 
   onMessage(payload) {
-    // Llama al onMessage de la clase base para manejar el logging
     super.onMessage(payload); 
-    
     const val = decode(payload, this.jsonPath);
     this.addLogEntry(val, 'received');
   }
 
-  addLogEntry(value, type = 'received') {
-    const timestamp = new Date().toLocaleTimeString();
+  addLogEntry(value, type = 'received', timestamp = new Date()) {
+    const timeString = timestamp.toLocaleTimeString();
     const newLogEntry = document.createElement('div');
     
     if (type === 'sent') {
       newLogEntry.style.color = 'var(--primary-color)';
-      newLogEntry.innerHTML = `<strong>[${timestamp}]</strong> ${String(value)}`;
-    } else {
-      newLogEntry.innerHTML = `<strong>[${timestamp}]</strong> ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`;
     }
+    
+    newLogEntry.innerHTML = `<strong>[${timeString}]</strong> ${typeof value === 'object' ? JSON.stringify(value) : String(value)}`;
     
     this.logArea.appendChild(newLogEntry);
 
@@ -79,7 +96,6 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   getConfigForm() {
-    // Reutiliza el formulario base y añade las opciones específicas de la consola
     return super.getBaseConfigForm() + `
       <label>Publish Topic (Outgoing):</label>
       <input id="cfg_publishTopic" type="text" value="${this.publishTopic}">
@@ -98,7 +114,7 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   saveConfig() {
-    super.saveBaseConfig(); // Guarda la configuración base (topic, logging, etc.)
+    super.saveBaseConfig();
     this.publishTopic = document.getElementById('cfg_publishTopic').value.trim();
     this.config.placeholder = document.getElementById('cfg_placeholder').value;
     this.config.max_lines = parseInt(document.getElementById('cfg_max_lines').value, 10) || 100;
@@ -107,7 +123,6 @@ export default class ConsoleWidget extends BaseWidget {
   }
 
   getOptions() {
-      // Combina las opciones base con las de este widget
       return {
         ...super.getOptions(),
         publishTopic: this.publishTopic,
@@ -117,10 +132,12 @@ export default class ConsoleWidget extends BaseWidget {
       };
   }
 
+  // MÉTODO ACTUALIZADO para llamar al loader
   setOptions(o) {
       super.setOptions(o);
       this.publishTopic = o.publishTopic !== undefined ? o.publishTopic : this.topic;
       this.config = { ...this.config, ...o };
       this.render();
+      this.loadFromLogger(); // Cargar historial después de configurar
   }
 }

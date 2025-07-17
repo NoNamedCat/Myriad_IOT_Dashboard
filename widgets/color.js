@@ -1,5 +1,6 @@
 import BaseWidget from './base.js';
 import { decode } from './utils.js';
+import { getDataLogger } from '../libs/datalogger.js';
 
 export default class ColorWidget extends BaseWidget {
   constructor(id, container, publishFn, parentGrid) {
@@ -23,6 +24,9 @@ export default class ColorWidget extends BaseWidget {
       const color = this.colorPicker.value;
       this.publish(this.topic, color);
       this.hexValueDiv.textContent = color;
+      if (this.config.loggingEnabled && this.logger) {
+        this.logger.log(color);
+      }
     });
 
     this.colorPicker.addEventListener('input', () => {
@@ -31,10 +35,23 @@ export default class ColorWidget extends BaseWidget {
   }
 
   onMessage(payload) {
+    super.onMessage(payload); // <-- AÑADIDO
     const val = String(decode(payload, this.jsonPath));
     if (/^#[0-9a-f]{6}$/i.test(val)) {
       this.colorPicker.value = val;
       this.hexValueDiv.textContent = val;
+    }
+  }
+
+  loadFromLogger() {
+    if (!this.config.loggingEnabled || !this.logger) return;
+    const logs = this.logger.getLogs();
+    if (logs.length > 0) {
+      const lastColor = logs[logs.length - 1].payload;
+      if (/^#[0-9a-f]{6}$/i.test(lastColor)) {
+        this.colorPicker.value = lastColor;
+        this.hexValueDiv.textContent = lastColor;
+      }
     }
   }
   
@@ -47,11 +64,12 @@ export default class ColorWidget extends BaseWidget {
   }
 
   getOptions() {
-      return { topic: this.topic, jsonPath: this.jsonPath };
+      return { ...super.getOptions(), topic: this.topic, jsonPath: this.jsonPath };
   }
 
   setOptions(o) {
       super.setOptions(o);
       this.render();
+      this.loadFromLogger();
   }
 }
